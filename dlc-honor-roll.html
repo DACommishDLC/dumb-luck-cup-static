@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>Dumb Luck Cup — Honor Roll</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --gold:    #f5c518;
+      --silver:  #c0c0c0;
+      --bronze:  #cd7f32;
+      --green:   #00c48c;
+      --dark:    #0d0f14;
+      --card:    #171a22;
+      --border:  #252836;
+      --text:    #e8eaf0;
+      --muted:   #6b7280;
+      --accent:  #667eea;
+    }
+
+    * { margin:0; padding:0; box-sizing:border-box; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--dark);
+      color: var(--text);
+      min-height: 100vh;
+      padding-bottom: 60px;
+    }
+
+    /* ── Header ─────────────────────────────────── */
+    header {
+      background: linear-gradient(135deg, #f5c518 0%, #d4a017 100%);
+      padding: 40px 20px 36px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    header::before {
+      content: '🏆';
+      position: absolute;
+      font-size: 200px;
+      opacity: 0.1;
+      top: -30px;
+      right: -30px;
+      transform: rotate(15deg);
+    }
+
+    .trophy-banner {
+      font-size: 64px;
+      margin-bottom: 12px;
+      filter: drop-shadow(0 4px 20px rgba(0,0,0,0.3));
+      position: relative;
+      z-index: 1;
+    }
+
+    h1 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 48px;
+      letter-spacing: 2px;
+      color: #000;
+      margin-bottom: 8px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .subtitle {
+      font-size: 16px;
+      color: rgba(0,0,0,0.7);
+      font-weight: 600;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ── Navigation ─────────────────────────────── */
+    nav {
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 20px;
+      display: flex;
+      gap: 12px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+
+    nav::-webkit-scrollbar { display: none; }
+
+    .nav-btn {
+      background: var(--border);
+      border: none;
+      color: var(--muted);
+      border-radius: 20px;
+      padding: 8px 18px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+
+    .nav-btn:hover {
+      background: var(--muted);
+      color: var(--text);
+    }
+
+    /* ── Content sections ───────────────────────── */
+    .content {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .section {
+      margin-bottom: 40px;
+    }
+
+    .section-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 32px;
+      letter-spacing: 1px;
+      color: var(--gold);
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .section-title::before {
+      content: '';
+      width: 4px;
+      height: 32px;
+      background: var(--gold);
+      border-radius: 2px;
+    }
+
+    /* ── Champions grid ─────────────────────────── */
+    .champions-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 16px;
+    }
+
+    .champion-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+      transition: all 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .champion-card:hover {
+      transform: translateY(-4px);
+      border-color: var(--gold);
+      box-shadow: 0 8px 24px rgba(245,197,24,0.2);
+    }
+
+    .champion-year {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 28px;
+      color: var(--gold);
+      margin-bottom: 8px;
+    }
+
+    .champion-name {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+
+    .champion-trophy {
+      font-size: 40px;
+      margin-top: 8px;
+      filter: drop-shadow(0 2px 8px rgba(245,197,24,0.4));
+    }
+
+    /* Multiple winners */
+    .champion-card.multiple {
+      background: linear-gradient(135deg, rgba(245,197,24,0.1) 0%, rgba(102,126,234,0.1) 100%);
+      border-color: var(--accent);
+    }
+
+    .champion-name.split {
+      font-size: 15px;
+      line-height: 1.4;
+    }
+
+    /* ── Records section ────────────────────────── */
+    .records-list {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .record-item {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: background 0.2s;
+    }
+
+    .record-item:last-child {
+      border-bottom: none;
+    }
+
+    .record-item:hover {
+      background: rgba(245,197,24,0.05);
+    }
+
+    .record-label {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .record-icon {
+      font-size: 24px;
+    }
+
+    .record-holder {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--gold);
+    }
+
+    /* ── Stats boxes ────────────────────────────── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 16px;
+    }
+
+    .stat-box {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      text-align: center;
+    }
+
+    .stat-value {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 48px;
+      color: var(--gold);
+      margin-bottom: 8px;
+      display: block;
+    }
+
+    .stat-label {
+      font-size: 14px;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    /* ── Legend section ─────────────────────────── */
+    .legend-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 12px;
+    }
+
+    .legend-item {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      text-align: center;
+    }
+
+    .legend-count {
+      font-size: 32px;
+      font-weight: 800;
+      color: var(--gold);
+      margin-bottom: 4px;
+    }
+
+    .legend-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .legend-label {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    /* Multiple time champs get special styling */
+    .legend-item.multi-champ {
+      border-color: var(--gold);
+      background: rgba(245,197,24,0.05);
+    }
+
+    .legend-item.multi-champ .legend-count {
+      color: var(--gold);
+      font-size: 40px;
+    }
+
+    /* ── Footer ─────────────────────────────────── */
+    footer {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    footer a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    /* ── Responsive ─────────────────────────────── */
+    @media (max-width: 600px) {
+      h1 { font-size: 36px; }
+      .section-title { font-size: 24px; }
+      .champions-grid {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      }
+    }
+  
+    .champion-avatar {
+      font-size: 48px;
+      margin-bottom: 12px;
+      filter: drop-shadow(0 2px 8px rgba(0,0,0,0.2));
+    }
+
+    .legend-avatar {
+      font-size: 32px;
+      margin-bottom: 8px;
+    }  </style>
+</head>
+<body>
+
+<!-- ── Header ─────────────────────────────────────── -->
+<header>
+  <div class="trophy-banner">🏆</div>
+  <h1>Honor Roll</h1>
+  <div class="subtitle">13 Seasons of Dumb Luck</div>
+</header>
+
+<!-- ── Navigation ─────────────────────────────────── -->
+<nav>
+  <a href="/" class="nav-btn">🏈 Make Picks</a>
+  <a href="/dlc-leaderboard-firebase-FINAL.html" class="nav-btn">📊 Leaderboard</a>
+  <a href="/dlc-admin-panel-firebase-FINAL.html" class="nav-btn">⚙️ Admin</a>
+</nav>
+
+<!-- ── Content ────────────────────────────────────── -->
+<div class="content">
+
+  <!-- Past Champions -->
+  <div class="section">
+    <h2 class="section-title">Past Champions</h2>
+    <div class="champions-grid">
+      <div class="champion-card">
+        <div class="champion-year">2025</div>
+        <div class="champion-avatar">🐸</div>
+        <div class="champion-name">Milo</div>
+        <div class="champion-trophy">🏆</div>
+      </div>
+      <div class="champion-card">
+        <div class="champion-year">2024</div>
+        <div class="champion-avatar">🥃</div>
+        <div class="champion-name">Q</div>
+        <div class="champion-trophy">🏆</div>
+      </div>
+      <div class="champion-card">
+        <div class="champion-year">2023</div>
+        <div class="champion-avatar">🐻</div>
+        <div class="champion-name">ML</div>
+        <div class="champion-trophy">🏆</div>
+      </div>
+      <div class="champion-card">
+        <div class="champion-year">2022</div>
+        <div class="champion-avatar">🐧</div>
+        <div class="champion-name">O</div>
+        <div class="champion-trophy">🏆</div>
+      </div>
+      <div class="champion-card">
+        <div class="champion-year">2021</div>
+        <div class="champion-avatar">🤘</div>
+        <div class="champion-name">Pops</div>
+        <div class="champion-trophy">🏆</div>
+      </div>
+      <div class="champion-card multiple">
+        <div class="champion-year">2020</div>
+        <div class="champion-avatar">👑 🥃</div>
+        <div class="champion-name split">Da Commish<br>& Q</div>
+        <div class="champion-trophy">🏆🏆</div>
+      </div>
+      <div class="champion-card">
+        <div class="champion-year">2019</div>
+        <div class="champion-avatar">🤘</div>
+        <div class="champion-name">Pops</div>
+        <div class="champion-trophy">🏆</div>
+      </div>
+      <div class="champion-card">
+        <div class="champion-year">2018</div>
+        <div class="champion-avatar">🇬🇧</div>
+        <div class="champion-name">The Brit</div>
+        <div class="champion-trophy">🏆</div>
+      </div>
+      <div class="champion-card">
+        <div class="champion-year">2017</div>
+        <div class="champion-avatar">🐧</div>
+        <div class="champion-name">O</div>
+        <div class="champion-trophy">🏆</div>
+      </div>
+      <div class="champion-card">
+        <div class="champion-year">2016</div>
+        <div class="champion-avatar">👑</div>
+        <div class="champion-name">Da Commish</div>
+        <div class="champion-trophy">🏆</div>
+      </div>
+      <div class="champion-card">
+        <div class="champion-year">2015</div>
+        <div class="champion-avatar">🐻</div>
+        <div class="champion-name">ML</div>
+        <div class="champion-trophy">🏆</div>
+      </div>
+      <div class="champion-card">
+        <div class="champion-year">2014</div>
+        <div class="champion-avatar">🥃</div>
+        <div class="champion-name">Q</div>
+        <div class="champion-trophy">🏆</div>
+      </div>
+      <div class="champion-card">
+        <div class="champion-year">2013</div>
+        <div class="champion-avatar">🐧</div>
+        <div class="champion-name">O</div>
+        <div class="champion-trophy">🏆</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- All-Time Records -->
+  <div class="section">
+    <h2 class="section-title">All-Time Records</h2>
+    <div class="records-list">
+      <div class="record-item">
+        <div class="record-label">
+          <span class="record-icon">🔥</span>
+          Most Points in a Single Week
+        </div>
+        <div class="record-holder">Honey</div>
+      </div>
+      <div class="record-item">
+        <div class="record-label">
+          <span class="record-icon">👑</span>
+          Most Championships
+        </div>
+        <div class="record-holder">O (3×)</div>
+      </div>
+
+      <div class="record-item">
+        <div class="record-label">
+          <span class="record-icon">🎯</span>
+          First Ever Champion
+        </div>
+        <div class="record-holder">O (2013)</div>
+      </div>
+      <div class="record-item">
+        <div class="record-label">
+          <span class="record-icon">🤝</span>
+          Only Co-Champions
+        </div>
+        <div class="record-holder">Da Commish & Q (2020)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Championship Count -->
+  <div class="section">
+    <h2 class="section-title">The Legends</h2>
+    <div class="legend-grid">
+      <div class="legend-item multi-champ">
+        <div class="legend-avatar">🐧</div>
+        <div class="legend-avatar">🥃</div>
+        <div class="legend-count">3</div>
+        <div class="legend-name">O</div>
+        <div class="legend-label">Championships</div>
+      </div>
+      <div class="legend-item multi-champ">
+        <div class="legend-avatar">🐻</div>
+        <div class="legend-count">3</div>
+        <div class="legend-name">Q</div>
+        <div class="legend-label">Championships</div>
+      </div>
+      <div class="legend-item multi-champ">
+        <div class="legend-avatar">👑</div>
+        <div class="legend-count">2</div>
+        <div class="legend-name">ML</div>
+        <div class="legend-label">Championships</div>
+      </div>
+      <div class="legend-item multi-champ">
+        <div class="legend-avatar">🤘</div>
+        <div class="legend-count">2</div>
+        <div class="legend-name">Da Commish</div>
+        <div class="legend-label">Championships</div>
+      </div>
+      <div class="legend-item multi-champ">
+        <div class="legend-avatar">🐸</div>
+        <div class="legend-count">2</div>
+        <div class="legend-name">Pops</div>
+        <div class="legend-label">Championships</div>
+      </div>
+      <div class="legend-item">
+        <div class="legend-avatar">🇬🇧</div>
+        <div class="legend-count">1</div>
+        <div class="legend-name">Milo</div>
+        <div class="legend-label">Championship</div>
+      </div>
+      <div class="legend-item">
+        <div class="legend-count">1</div>
+        <div class="legend-name">The Brit</div>
+        <div class="legend-label">Championship</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Fun Stats -->
+  <div class="section">
+    <h2 class="section-title">By The Numbers</h2>
+    <div class="stats-grid">
+      <div class="stat-box">
+        <span class="stat-value">13</span>
+        <div class="stat-label">Seasons Played</div>
+      </div>
+      <div class="stat-box">
+        <span class="stat-value">14</span>
+        <div class="stat-label">Total Championships<br>(2020 tie)</div>
+      </div>
+      <div class="stat-box">
+        <span class="stat-value">7</span>
+        <div class="stat-label">Different Champions</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── Footer ─────────────────────────────────────── -->
+<footer>
+  <p>Dumb Luck Cup • Est. 2013 • 13 Seasons of Glory</p>
+  <p style="margin-top:12px; opacity:0.6;">
+    "It's not about skill — it's about heart, grit, and occasionally checking the spreads."
+  </p>
+</footer>
+
+</body>
+</html>
