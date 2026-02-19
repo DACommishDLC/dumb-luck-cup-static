@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>Dumb Luck Cup — Rules & FAQ</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --gold:    #f5c518;
+      --silver:  #c0c0c0;
+      --bronze:  #cd7f32;
+      --green:   #00c48c;
+      --dark:    #0d0f14;
+      --card:    #171a22;
+      --border:  #252836;
+      --text:    #e8eaf0;
+      --muted:   #9ca3af;
+      --accent:  #667eea;
+    }
+
+    * { margin:0; padding:0; box-sizing:border-box; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--dark);
+      color: var(--text);
+      min-height: 100vh;
+      padding-bottom: 60px;
+      line-height: 1.6;
+    }
+
+    /* ── Header ─────────────────────────────────── */
+    header {
+      background: linear-gradient(135deg, #f5c518 0%, #d4a017 100%);
+      padding: 40px 20px 36px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    header::before {
+      content: '📖';
+      position: absolute;
+      font-size: 200px;
+      opacity: 0.1;
+      top: -30px;
+      left: -30px;
+      transform: rotate(-15deg);
+    }
+
+    .header-icon {
+      font-size: 64px;
+      margin-bottom: 12px;
+      filter: drop-shadow(0 4px 20px rgba(0,0,0,0.3));
+      position: relative;
+      z-index: 1;
+    }
+
+    h1 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 48px;
+      letter-spacing: 2px;
+      color: #000;
+      margin-bottom: 8px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .subtitle {
+      font-size: 16px;
+      color: rgba(0,0,0,0.7);
+      font-weight: 600;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ── Navigation ─────────────────────────────── */
+    nav {
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 20px;
+      display: flex;
+      gap: 12px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+
+    nav::-webkit-scrollbar { display: none; }
+
+    .nav-btn {
+      background: var(--border);
+      border: none;
+      color: var(--muted);
+      border-radius: 20px;
+      padding: 8px 18px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+
+    .nav-btn:hover {
+      background: var(--muted);
+      color: var(--text);
+    }
+
+    /* ── Content ────────────────────────────────── */
+    .content {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+
+    .section {
+      margin-bottom: 50px;
+    }
+
+    .section-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 36px;
+      letter-spacing: 1px;
+      color: var(--gold);
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .section-title::before {
+      content: '';
+      width: 4px;
+      height: 36px;
+      background: var(--gold);
+      border-radius: 2px;
+    }
+
+    /* ── Rules Cards ────────────────────────────── */
+    .rule-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 16px;
+      transition: all 0.2s;
+    }
+
+    .rule-card:hover {
+      border-color: var(--gold);
+      transform: translateX(4px);
+    }
+
+    .rule-number {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      background: var(--gold);
+      color: #000;
+      border-radius: 50%;
+      font-weight: 800;
+      font-size: 16px;
+      margin-right: 12px;
+    }
+
+    .rule-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+    }
+
+    .rule-text {
+      font-size: 15px;
+      color: var(--muted);
+      line-height: 1.7;
+      margin-left: 44px;
+    }
+
+    /* ── Scoring Box ────────────────────────────── */
+    .scoring-box {
+      background: linear-gradient(135deg, rgba(245,197,24,0.1) 0%, rgba(102,126,234,0.1) 100%);
+      border: 2px solid var(--gold);
+      border-radius: 12px;
+      padding: 24px;
+      margin: 24px 0;
+    }
+
+    .scoring-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--gold);
+      margin-bottom: 16px;
+      text-align: center;
+    }
+
+    .scoring-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-top: 16px;
+    }
+
+    .scoring-item {
+      text-align: center;
+      padding: 16px;
+      background: rgba(0,0,0,0.3);
+      border-radius: 8px;
+    }
+
+    .scoring-points {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 48px;
+      color: var(--gold);
+      line-height: 1;
+    }
+
+    .scoring-label {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 4px;
+      font-weight: 600;
+    }
+
+    /* ── Trophy Callout ─────────────────────────── */
+    .trophy-callout {
+      background: var(--card);
+      border: 2px solid var(--gold);
+      border-radius: 16px;
+      padding: 32px;
+      text-align: center;
+      margin: 32px 0;
+    }
+
+    .trophy-icon {
+      font-size: 80px;
+      margin-bottom: 16px;
+      filter: drop-shadow(0 4px 20px rgba(245,197,24,0.4));
+    }
+
+    .trophy-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 32px;
+      color: var(--gold);
+      margin-bottom: 12px;
+    }
+
+    .trophy-text {
+      font-size: 16px;
+      color: var(--muted);
+      line-height: 1.7;
+      max-width: 500px;
+      margin: 0 auto;
+    }
+
+    /* ── FAQ Items ──────────────────────────────── */
+    .faq-item {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 16px;
+    }
+
+    .faq-question {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .faq-icon {
+      color: var(--gold);
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+
+    .faq-answer {
+      font-size: 15px;
+      color: var(--muted);
+      line-height: 1.7;
+      margin-left: 32px;
+    }
+
+    /* ── Important Box ──────────────────────────── */
+    .important-box {
+      background: rgba(245,197,24,0.05);
+      border-left: 4px solid var(--gold);
+      padding: 16px 20px;
+      margin: 16px 0;
+      border-radius: 4px;
+    }
+
+    .important-box strong {
+      color: var(--gold);
+    }
+
+    /* ── Footer ─────────────────────────────────── */
+    footer {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    footer a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    /* ── Responsive ─────────────────────────────── */
+    @media (max-width: 600px) {
+      h1 { font-size: 36px; }
+      .section-title { font-size: 28px; }
+      .scoring-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Header ─────────────────────────────────────── -->
+<header>
+  <div class="header-icon">📖</div>
+  <h1>Rules & FAQ</h1>
+  <div class="subtitle">Everything you need to know</div>
+</header>
+
+<!-- ── Navigation ─────────────────────────────────── -->
+<nav>
+  <a href="/" class="nav-btn">🏈 Make Picks</a>
+  <a href="/dlc-leaderboard-firebase-FINAL.html" class="nav-btn">📊 Leaderboard</a>
+  <a href="/dlc-honor-roll.html" class="nav-btn">🏆 Honor Roll</a>
+  <a href="/dlc-rules.html" class="nav-btn">📖 Rules & FAQ</a>
+  <a href="/dlc-admin-panel-firebase-FINAL.html" class="nav-btn">⚙️ Admin</a>
+</nav>
+
+<!-- ── Content ────────────────────────────────────── -->
+<div class="content">
+
+  <!-- The Prize -->
+  <div class="trophy-callout">
+    <div class="trophy-icon">🏆</div>
+    <div class="trophy-title">The Dumb Luck Cup Trophy</div>
+    <div class="trophy-text">
+      Win the season and take home the coveted Dumb Luck Cup Trophy for an entire year! 
+      Display it with pride. Guard it jealously. Return it reluctantly.
+    </div>
+  </div>
+
+  <!-- Rules Section -->
+  <div class="section">
+    <h2 class="section-title">The Rules</h2>
+
+    <div class="rule-card">
+      <div class="rule-title">
+        <span class="rule-number">1</span>
+        Pick 10 Games Per Week
+      </div>
+      <div class="rule-text">
+        Each week, you must select exactly 10 games from the available matchups. Choose wisely—or don't, it's called Dumb Luck for a reason.
+      </div>
+    </div>
+
+    <div class="rule-card">
+      <div class="rule-title">
+        <span class="rule-number">2</span>
+        Picks Lock at Kickoff
+      </div>
+      <div class="rule-text">
+        Once a game starts, your pick for that game is locked. You can change your picks as many times as you want before kickoff, but once the clock starts, it's set in stone.
+      </div>
+    </div>
+
+    <div class="rule-card">
+      <div class="rule-title">
+        <span class="rule-number">3</span>
+        Scoring System
+      </div>
+      <div class="rule-text">
+        Points are awarded based on how your pick performs against the spread that was locked at kickoff:
+      </div>
+      <div class="scoring-box">
+        <div class="scoring-title">Points Breakdown</div>
+        <div class="scoring-grid">
+          <div class="scoring-item">
+            <div class="scoring-points">2</div>
+            <div class="scoring-label">Your team covers</div>
+          </div>
+          <div class="scoring-item">
+            <div class="scoring-points">1</div>
+            <div class="scoring-label">Push (tie)</div>
+          </div>
+          <div class="scoring-item">
+            <div class="scoring-points">0</div>
+            <div class="scoring-label">Your team misses</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="rule-card">
+      <div class="rule-title">
+        <span class="rule-number">4</span>
+        The Spread That Matters
+      </div>
+      <div class="rule-text">
+        Spreads can change throughout the week, but the only spread that matters is the one locked at kickoff. That's what we use to score your picks—no arguments, no appeals.
+      </div>
+    </div>
+
+    <div class="rule-card">
+      <div class="rule-title">
+        <span class="rule-number">5</span>
+        Missing a Week
+      </div>
+      <div class="rule-text">
+        If you don't submit picks for a week, you score 0 points that week. Life happens—we get it. But the competition continues without you.
+      </div>
+    </div>
+
+    <div class="rule-card">
+      <div class="rule-title">
+        <span class="rule-number">6</span>
+        Season Champion
+      </div>
+      <div class="rule-text">
+        At the end of the season, the player with the most total points wins the Dumb Luck Cup Trophy and bragging rights for an entire year. In case of a tie, we'll figure it out (co-champions are possible—see 2020).
+      </div>
+    </div>
+
+    <div class="rule-card">
+      <div class="rule-title">
+        <span class="rule-number">7</span>
+        Postponed or Cancelled Games
+      </div>
+      <div class="rule-text">
+        If a game is postponed to a later date, your pick carries over to the rescheduled game. If a game is cancelled entirely, that pick is voided and doesn't count toward your weekly total.
+      </div>
+    </div>
+
+  </div>
+
+  <!-- FAQ Section -->
+  <div class="section">
+    <h2 class="section-title">Frequently Asked Questions</h2>
+
+    <div class="faq-item">
+      <div class="faq-question">
+        <span class="faq-icon">❓</span>
+        What is the Dumb Luck Cup?
+      </div>
+      <div class="faq-answer">
+        The Dumb Luck Cup is a season-long competition where you pick 10 games against the spread each week. It's called "Dumb Luck" because spreads are notoriously unpredictable—skill helps, but luck is king.
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-question">
+        <span class="faq-icon">❓</span>
+        How does spread betting work?
+      </div>
+      <div class="faq-answer">
+        A spread is a handicap applied to level the playing field. For example, if Kansas City is -9.5 against Las Vegas, KC must win by more than 9.5 points for your pick to "cover." If you pick the underdog (LV +9.5), they can lose by up to 9 points and you still win.
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-question">
+        <span class="faq-icon">❓</span>
+        Can I change my picks before kickoff?
+      </div>
+      <div class="faq-answer">
+        Yes! You can change your picks as many times as you want up until each game's kickoff. Once the game starts, your pick is locked.
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-question">
+        <span class="faq-icon">❓</span>
+        What if I pick the wrong team by accident?
+      </div>
+      <div class="faq-answer">
+        As long as the game hasn't started, you can change it. If the game already kicked off, tough luck—your pick is locked. Double-check before kickoff!
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-question">
+        <span class="faq-icon">❓</span>
+        Can I see other players' picks?
+      </div>
+      <div class="faq-answer">
+        Not until after the games lock. We keep picks private to prevent copycats and maintain the competitive spirit.
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-question">
+        <span class="faq-icon">❓</span>
+        When do scores get updated?
+      </div>
+      <div class="faq-answer">
+        The commissioner enters final scores after games conclude. Scores are typically updated within 24 hours of game completion. Check the leaderboard to see the latest standings.
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-question">
+        <span class="faq-icon">❓</span>
+        What if there's a disputed call or scoring error?
+      </div>
+      <div class="faq-answer">
+        Contact the commissioner (Da Commish) immediately. We use official game results and the locked spreads from kickoff. If there's a legitimate scoring error, we'll correct it.
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-question">
+        <span class="faq-icon">❓</span>
+        What if I forget to submit picks one week?
+      </div>
+      <div class="faq-answer">
+        You'll score 0 points for that week, but you can still compete in future weeks. One bad week doesn't ruin your season—this is a marathon, not a sprint.
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Important Note -->
+  <div class="important-box">
+    <strong>Remember:</strong> The Dumb Luck Cup is about having fun, friendly competition, and celebrating the chaos of sports betting. Don't take it too seriously—but also, definitely take it seriously. 🏆
+  </div>
+
+</div>
+
+<!-- ── Footer ─────────────────────────────────────── -->
+<footer>
+  <p>Dumb Luck Cup • Est. 2013 • 13 Seasons of Glory</p>
+  <p style="margin-top:12px; opacity:0.6;">
+    Questions? Contact <a href="#">Da Commish</a>
+  </p>
+</footer>
+
+</body>
+</html>
