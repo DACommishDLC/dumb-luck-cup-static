@@ -1695,6 +1695,235 @@ Cleveland Browns at Cincinnati Bengals (-7.5, 44.5)
       document.getElementById('parseCount').textContent = '';
       document.getElementById('parsedPreview').innerHTML = '';
     }
-  </script>
+  
+
+
+// Player email addresses
+const PLAYER_EMAILS = {"Da Commish": "rzwitt@gmail.com", "Honey": "susie0729@gmail.com", "Q": "cookinvic@gmail.com", "O": "Oscar_witt@yahoo.com", "Milo": "milocwitt@gmail.com", "ML": "marylouwitt74@gmail.com", "Pops": "marylouwitt74@gmail.com", "Coin": "rzwitt@gmail.com", "Jason": "showJM@state.gov", "Owls": "Allison.witt.click@gmail.com, allistairclick@gmail.com", "Cobe": "cobe.click@icloud.com", "Abby": "acjurasin@gmail.com"};
+
+function getAllPlayerEmails() {
+  return Object.values(PLAYER_EMAILS).join(', ');
+}
+
+function fillAllEmails() {
+  document.getElementById('emailRecipients').value = getAllPlayerEmails();
+}
+
+// ── Email Generation ────────────────────────────────────────────────
+async function generateWeeklyEmail() {
+  const week = document.getElementById('emailWeek').value;
+  
+  // Load all data
+  const allPicks = await DLC_DB.loadAllPlayerPicks();
+  const games = await DLC_DB.loadGames();
+  
+  // Calculate standings
+  const standings = calculateStandings(allPicks, games);
+  
+  // Generate email HTML
+  const emailHTML = `
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+  <div style="background: linear-gradient(135deg, #f5c518 0%, #d4a017 100%); padding: 30px; text-align: center; border-radius: 12px 12px 0 0;">
+    <h1 style="margin: 0; font-size: 32px; color: #000;">🏈 Dumb Luck Cup</h1>
+    <p style="margin: 10px 0 0 0; font-size: 18px; color: rgba(0,0,0,0.7);">Week ${week} Results</p>
+  </div>
+  
+  <div style="padding: 30px; background: #fff;">
+    <h2 style="color: #333; margin-bottom: 20px;">🏆 Week ${week} Winners</h2>
+    ${generateWeekTopThree(standings, week)}
+    
+    <h2 style="color: #333; margin: 30px 0 20px 0;">📊 Season Standings</h2>
+    ${generateStandingsTable(standings)}
+    
+    <div style="margin-top: 30px; padding: 20px; background: #f9f9f9; border-radius: 8px;">
+      <p style="margin: 0; color: #666; font-size: 14px; text-align: center;">
+        Make your picks for Week ${parseInt(week) + 1} at<br>
+        <a href="https://dumb-luck-cup-static.vercel.app" style="color: #667eea; text-decoration: none; font-weight: 600;">
+          dumb-luck-cup-static.vercel.app
+        </a>
+      </p>
+    </div>
+  </div>
+  
+  <div style="padding: 20px; background: #f5f5f5; text-align: center; border-radius: 0 0 12px 12px;">
+    <p style="margin: 0; color: #999; font-size: 12px;">
+      Dumb Luck Cup • Est. 2013 • 13 Seasons of Glory
+    </p>
+  </div>
+</div>
+  `;
+  
+  document.getElementById('emailContent').innerHTML = emailHTML;
+  document.getElementById('emailPreview').style.display = 'block';
+}
+
+function generateWeekTopThree(standings, week) {
+  const weekStandings = standings
+    .map(s => ({
+      player: s.player,
+      weekPoints: s.weeks.find(w => w.week === parseInt(week))?.points || 0
+    }))
+    .sort((a, b) => b.weekPoints - a.weekPoints)
+    .slice(0, 3);
+    
+  const medals = ['🥇', '🥈', '🥉'];
+  
+  return weekStandings.map((s, i) => `
+    <div style="padding: 15px; margin-bottom: 10px; background: ${i === 0 ? '#fff9e6' : '#f9f9f9'}; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+      <div>
+        <span style="font-size: 24px; margin-right: 10px;">${medals[i]}</span>
+        <strong style="font-size: 18px; color: #333;">${s.player}</strong>
+      </div>
+      <div style="font-size: 20px; font-weight: bold; color: ${i === 0 ? '#f5c518' : '#666'};">
+        ${s.weekPoints} pts
+      </div>
+    </div>
+  `).join('');
+}
+
+function generateStandingsTable(standings) {
+  return `
+    <table style="width: 100%; border-collapse: collapse;">
+      <thead>
+        <tr style="background: #f5f5f5;">
+          <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">Rank</th>
+          <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">Player</th>
+          <th style="padding: 12px; text-align: right; border-bottom: 2px solid #ddd;">Total Points</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${standings.slice(0, 10).map((s, i) => `
+          <tr style="border-bottom: 1px solid #eee;">
+            <td style="padding: 10px; color: #666;">${i + 1}</td>
+            <td style="padding: 10px; font-weight: ${i < 3 ? '600' : '400'};">
+              ${i < 3 ? ['🥇', '🥈', '🥉'][i] + ' ' : ''}${s.player}
+            </td>
+            <td style="padding: 10px; text-align: right; font-weight: 600; color: ${i === 0 ? '#f5c518' : '#333'};">
+              ${s.totalPoints}
+            </td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `;
+}
+
+function calculateStandings(allPicks, games) {
+  const standings = [];
+  
+  for (const [playerName, playerPicks] of Object.entries(allPicks)) {
+    let totalPoints = 0;
+    const weeks = [];
+    
+    // Calculate points for each game
+    for (const [gameId, pick] of Object.entries(playerPicks)) {
+      const game = games.find(g => g.id === gameId);
+      if (game && game.status === 'final') {
+        const points = calculateGamePoints(pick, game);
+        totalPoints += points;
+        
+        // Group by week (you'll need to add week field to games)
+        const week = game.week || 8; // Default to week 8 for now
+        let weekData = weeks.find(w => w.week === week);
+        if (!weekData) {
+          weekData = { week, points: 0 };
+          weeks.push(weekData);
+        }
+        weekData.points += points;
+      }
+    }
+    
+    standings.push({ player: playerName, totalPoints, weeks });
+  }
+  
+  return standings.sort((a, b) => b.totalPoints - a.totalPoints);
+}
+
+function calculateGamePoints(pick, game) {
+  // Implement your 2/1/0 scoring logic here
+  // This is a simplified version - adjust based on your actual scoring
+  const homeScore = game.homeScore || 0;
+  const awayScore = game.awayScore || 0;
+  const spread = game.lockedSpread || game.currentSpread;
+  
+  const margin = homeScore - awayScore;
+  const coverMargin = margin + spread;
+  
+  let pickedTeamCovered = false;
+  if (pick.side === 'favorite') {
+    pickedTeamCovered = coverMargin > 0;
+  } else {
+    pickedTeamCovered = coverMargin < 0;
+  }
+  
+  if (Math.abs(coverMargin) < 0.5) return 1; // Push
+  return pickedTeamCovered ? 2 : 0; // Win or loss
+}
+
+function sendEmail() {
+  const recipients = document.getElementById('emailRecipients').value;
+  const week = document.getElementById('emailWeek').value;
+  const emailContent = document.getElementById('emailContent').innerHTML;
+  
+  // Create mailto link
+  const subject = `Dumb Luck Cup - Week ${week} Results`;
+  const body = emailContent
+    .replace(/<[^>]*>/g, '') // Strip HTML for plain text
+    .replace(/&nbsp;/g, ' ')
+    .substring(0, 2000); // Email clients have body length limits
+    
+  const mailtoLink = `mailto:${recipients}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  
+  window.location.href = mailtoLink;
+}
+
+</script>
+
+
+<!-- Email Results Panel -->
+<div class="panel" id="panel-email">
+  <div class="panel-header">
+    <h2>📧 Email Week Results</h2>
+    <p>Generate and send weekly results to all players</p>
+  </div>
+  
+  <div class="section">
+    <div style="margin-bottom:20px;">
+      <label style="display:block; margin-bottom:8px; font-weight:600;">Email Recipients:</label>
+      <div style="display:flex; gap:10px; align-items:flex-start;">
+        <input type="text" id="emailRecipients" 
+               placeholder="player1@email.com, player2@email.com, ..." 
+               style="flex:1; padding:10px; border:1px solid #ddd; border-radius:6px; font-size:14px;">
+        <button onclick="fillAllEmails()" 
+                style="background:#667eea; color:white; border:none; padding:10px 20px; border-radius:6px; font-size:14px; font-weight:600; cursor:pointer; white-space:nowrap;">
+          📋 Fill All Players
+        </button>
+      </div>
+      <p style="font-size:12px; color:#666; margin-top:6px;">Click "Fill All Players" to auto-fill all email addresses</p>
+    </div>
+    
+    <div style="margin-bottom:20px;">
+      <label style="display:block; margin-bottom:8px; font-weight:600;">Week Number:</label>
+      <input type="number" id="emailWeek" value="8" min="1" max="18"
+             style="width:150px; padding:10px; border:1px solid #ddd; border-radius:6px; font-size:14px;">
+    </div>
+    
+    <button onclick="generateWeeklyEmail()" 
+            style="background:#667eea; color:white; border:none; padding:12px 24px; border-radius:8px; font-size:15px; font-weight:600; cursor:pointer;">
+      📧 Generate Email
+    </button>
+    
+    <div id="emailPreview" style="margin-top:30px; padding:20px; background:#f9f9f9; border-radius:8px; display:none;">
+      <h3 style="margin-bottom:15px;">Email Preview:</h3>
+      <div id="emailContent" style="background:white; padding:20px; border-radius:6px; font-family:Arial,sans-serif; line-height:1.6;">
+      </div>
+      <button onclick="sendEmail()" 
+              style="margin-top:20px; background:#00c48c; color:white; border:none; padding:12px 24px; border-radius:8px; font-size:15px; font-weight:600; cursor:pointer;">
+        ✉️ Open in Email Client
+      </button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
