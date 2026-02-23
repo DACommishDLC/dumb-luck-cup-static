@@ -907,10 +907,38 @@
     `).join('');
   }
 
+
+  function getTimeUntilKickoff(gameTime) {
+    const now = new Date();
+    const kickoff = new Date(gameTime);
+    const diff = kickoff - now;
+    
+    if (diff < 0) return null; // Game has started
+    
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    
+    if (hours > 24) {
+      const days = Math.floor(hours / 24);
+      return `${days}d ${hours % 24}h`;
+    } else if (hours > 0) {
+      return `${hours}h ${minutes}m`;
+    } else if (minutes > 0) {
+      return `${minutes}m`;
+    } else {
+      return 'Starting now!';
+    }
+  }
+
   function renderGameCard(game) {
-    const isLocked   = game.status === 'live' || game.status === 'final';
-    const myPick     = picks[game.id];
-    const isPicked   = !!myPick;
+    // Auto-lock games at kickoff time
+    const now = new Date();
+    const gameTime = new Date(game.gameTime);
+    const hasStarted = now >= gameTime;
+    
+    const isLocked = hasStarted || game.status === 'live' || game.status === 'final';
+    const myPick = picks[game.id];
+    const isPicked = !!myPick;
 
     // Determine favorite and underdog
     // currentSpread is relative to HOME team (negative = home favored)
@@ -988,9 +1016,48 @@
       </div>`;
   }
 
+
+  // ── Auto-lock timer ──────────────────────────────────────────────────────
+  function checkForGameLocks() {
+    const now = new Date();
+    let needsRefresh = false;
+    
+    games.forEach(game => {
+      const gameTime = new Date(game.gameTime);
+      const wasUnlocked = game.status !== 'live' && game.status !== 'final';
+      const hasStarted = now >= gameTime;
+      
+      if (wasUnlocked && hasStarted) {
+        needsRefresh = true;
+      }
+    });
+    
+    if (needsRefresh) {
+      console.log('🔒 Games have started - refreshing...');
+      renderGames();
+      updateCounter();
+    }
+  }
+  
+  // Check every 30 seconds for games that should lock
+  setInterval(checkForGameLocks, 30000);
+
   // ── Pick logic ───────────────────────────────────
   function makePick(gameId, team, spread, side) {
     if (!currentPlayer) return;
+    
+    // Check if game has started
+    const game = games.find(g => g.id === gameId);
+    if (game) {
+      const now = new Date();
+      const gameTime = new Date(game.gameTime);
+      const hasStarted = now >= gameTime || game.status === 'live' || game.status === 'final';
+      
+      if (hasStarted) {
+        alert('🔒 This game has already started. Picks are locked!');
+        return;
+      }
+    }
 
     const pickCount = Object.keys(picks).length;
     const alreadyPicked = picks[gameId];
