@@ -453,6 +453,7 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
   <script src="firebase-config.js"></script>
+  <script src="espn-api.js"></script>
 </head>
 <body>
   <div class="container">
@@ -616,9 +617,36 @@
     <!-- Load New Week Tab -->
     <div class="tab-content" data-content="load">
 
-      <!-- STEP 1: Paste from Yahoo -->
+      <!-- STEP 0: Auto-load from ESPN -->
+      <div style="background:#eafaf1; border-left:4px solid #10b981; border-radius:8px; padding:20px; margin-bottom:28px;">
+        <h3 style="margin-bottom:6px;">🏈 Auto-load from ESPN (beta)</h3>
+        <p style="color:#444; font-size:14px; line-height:1.8; margin-bottom:14px;">
+          Pulls this week's games and spreads straight from ESPN — no copy/paste.
+          Still being tested; if a league/week comes back empty or a spread looks
+          wrong, fall back to the Yahoo paste method below and let Da Commish know.
+        </p>
+        <div class="controls" style="margin-bottom:14px;">
+          <div class="filter-group">
+            <label style="font-weight:500; font-size:14px;">Week:</label>
+            <input type="number" id="espnWeek" value="8" min="1" max="18" style="width:70px;">
+            <label style="font-weight:500; font-size:14px; margin-left:10px;">Season:</label>
+            <input type="number" id="espnSeason" value="2025" min="2020" max="2030" style="width:80px;">
+            <label style="font-weight:500; font-size:14px; margin-left:10px;">Leagues:</label>
+            <label style="font-size:13px; margin-left:6px;"><input type="checkbox" id="espnIncludeNFL" checked> NFL</label>
+            <label style="font-size:13px; margin-left:10px;"><input type="checkbox" id="espnIncludeCFB" checked> FBS</label>
+          </div>
+        </div>
+        <div style="display:flex; gap:12px; align-items:center;">
+          <button class="btn btn-primary" onclick="fetchFromESPN()">🔄 Fetch from ESPN</button>
+          <button class="btn btn-secondary" onclick="clearESPNPreview()">Clear</button>
+          <span id="espnFetchStatus" style="font-size:13px; color:#666;"></span>
+        </div>
+        <div id="espnPreview" style="margin-top:20px;"></div>
+      </div>
+
+      <!-- STEP 1: Paste from Yahoo (fallback) -->
       <div style="background:#f0f4ff; border-left:4px solid #667eea; border-radius:8px; padding:20px; margin-bottom:28px;">
-        <h3 style="margin-bottom:6px;">📋 How to load games from Yahoo Sports</h3>
+        <h3 style="margin-bottom:6px;">📋 Or paste from Yahoo Sports (fallback)</h3>
         <ol style="color:#444; font-size:14px; line-height:2; margin-left:18px;">
           <li>Go to <strong>sports.yahoo.com/nfl/betting</strong> (or college-football)</li>
           <li>Find the weekly spreads article (e.g. "Full list of Week 8 spreads")</li>
@@ -1543,6 +1571,95 @@ Cleveland Browns at Cincinnati Bengals (-7.5, 44.5)
       a.download = `dlc-scores-week${games[0]?.week || 8}-${new Date().toISOString().split('T')[0]}.csv`;
       a.click();
       showAlert('Scores exported!', 'success');
+    }
+
+    // ─── ESPN Auto-Load ─────────────────────────────────────────────────────
+
+    let espnFetchedGames = [];
+
+    async function fetchFromESPN() {
+      const statusEl = document.getElementById('espnFetchStatus');
+      const week = parseInt(document.getElementById('espnWeek').value) || 8;
+      const season = parseInt(document.getElementById('espnSeason').value) || new Date().getFullYear();
+      const leagues = [];
+      if (document.getElementById('espnIncludeNFL').checked) leagues.push('nfl');
+      if (document.getElementById('espnIncludeCFB').checked) leagues.push('cfb');
+
+      if (!leagues.length) {
+        statusEl.textContent = '⚠️ Pick at least one league.';
+        return;
+      }
+      if (typeof ESPN_API === 'undefined') {
+        statusEl.textContent = '⚠️ espn-api.js did not load.';
+        return;
+      }
+
+      statusEl.textContent = '⏳ Fetching...';
+      try {
+        espnFetchedGames = await ESPN_API.fetchWeekGames({ week, season, leagues });
+        statusEl.textContent = `✅ ${espnFetchedGames.length} game${espnFetchedGames.length !== 1 ? 's' : ''} found`;
+        renderESPNPreview();
+      } catch (e) {
+        console.error('ESPN fetch failed:', e);
+        statusEl.textContent = `❌ ESPN fetch failed: ${e.message}`;
+        espnFetchedGames = [];
+        document.getElementById('espnPreview').innerHTML = '';
+      }
+    }
+
+    function renderESPNPreview() {
+      const preview = document.getElementById('espnPreview');
+      if (!espnFetchedGames.length) { preview.innerHTML = ''; return; }
+
+      const rows = espnFetchedGames.map((g, i) => {
+        const spreadLabel = g.currentSpread === null
+          ? '—'
+          : (g.currentSpread <= 0
+              ? `${g.homeAbbr} ${g.currentSpread}`
+              : `${g.awayAbbr} -${g.currentSpread}`);
+        return `<tr>
+          <td style="padding:8px 12px;font-size:13px;">${i + 1}</td>
+          <td style="padding:8px 12px;font-size:12px;color:#666;">${g.league}</td>
+          <td style="padding:8px 12px;font-size:13px;font-weight:500;">${g.awayTeam} @ ${g.homeTeam}</td>
+          <td style="padding:8px 12px;font-size:13px;color:#10b981;font-weight:600;">${spreadLabel}</td>
+          <td style="padding:8px 12px;font-size:12px;color:#999;">${new Date(g.gameTime).toLocaleString()}</td>
+        </tr>`;
+      }).join('');
+
+      preview.innerHTML = `
+        <h4 style="margin-bottom:10px;color:#333;">Preview (${espnFetchedGames.length} games)</h4>
+        <div style="max-height:320px;overflow-y:auto;border:1px solid #e0e0e0;border-radius:8px;">
+          <table style="width:100%;border-collapse:collapse;">
+            <thead><tr style="background:#fafafa;">
+              <th style="padding:8px 12px;text-align:left;font-size:12px;color:#666;">#</th>
+              <th style="padding:8px 12px;text-align:left;font-size:12px;color:#666;">League</th>
+              <th style="padding:8px 12px;text-align:left;font-size:12px;color:#666;">Matchup</th>
+              <th style="padding:8px 12px;text-align:left;font-size:12px;color:#666;">Spread</th>
+              <th style="padding:8px 12px;text-align:left;font-size:12px;color:#666;">Kickoff</th>
+            </tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+        <button class="btn btn-primary" style="margin-top:14px;" onclick="importESPNGames()">⬇️ Import These Games</button>`;
+    }
+
+    function importESPNGames() {
+      if (!espnFetchedGames.length) return;
+      games.push(...espnFetchedGames);
+      saveGames();
+      updateStats();
+      renderGamesTable();
+      renderSpreadsTable();
+      renderUpcomingGames();
+      showAlert(`✅ Imported ${espnFetchedGames.length} games from ESPN!`, 'success');
+      clearESPNPreview();
+      document.querySelector('[data-tab="games"]').click();
+    }
+
+    function clearESPNPreview() {
+      espnFetchedGames = [];
+      document.getElementById('espnPreview').innerHTML = '';
+      document.getElementById('espnFetchStatus').textContent = '';
     }
 
     // ─── Yahoo Sports Paste Parser ────────────────────────────────────────────
