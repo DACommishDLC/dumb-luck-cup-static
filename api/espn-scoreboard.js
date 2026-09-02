@@ -22,16 +22,24 @@ module.exports = async (req, res) => {
     return;
   }
 
-  const { league = 'nfl', week, seasontype = '2', year } = req.query;
+  const { league = 'nfl', week, seasontype = '2', year, dates } = req.query;
   const path = LEAGUE_PATHS[league];
   if (!path) {
     res.status(400).json({ error: `Unknown league "${league}". Use "nfl" or "cfb".` });
     return;
   }
 
-  const params = new URLSearchParams({ seasontype: String(seasontype) });
-  if (week) params.set('week', String(week));
-  if (year) params.set('year', String(year));
+  // `dates=YYYYMMDD-YYYYMMDD` is the reliable path — prefer it when given.
+  // Falls back to week/seasontype/year, which ESPN doesn't always resolve
+  // to the full slate you'd expect.
+  const params = new URLSearchParams();
+  if (dates) {
+    params.set('dates', String(dates));
+  } else {
+    params.set('seasontype', String(seasontype));
+    if (week) params.set('week', String(week));
+    if (year) params.set('year', String(year));
+  }
   if (league === 'cfb') params.set('groups', '80'); // FBS
 
   const url = `https://site.api.espn.com/apis/site/v2/sports/${path}/scoreboard?${params}`;

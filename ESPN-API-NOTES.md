@@ -1,9 +1,17 @@
 # ESPN API Integration — Prep Notes
 
-Status: **groundwork laid, not yet live-tested.** This session's sandbox had
-outbound access to `site.api.espn.com` blocked, so nothing here has been
-verified against a real response. Test it for real the first time you use it,
-before trusting it during an actual week.
+Status: **live-tested once, thin results.** First live test (preview deploy)
+came back with only ~5 games instead of a full slate. Root cause: querying
+ESPN by `week`/`season`/`seasontype` number doesn't reliably resolve to the
+full slate — it can silently narrow to just the games happening "now"
+instead of erroring. Switched the primary query to an explicit
+`dates=YYYYMMDD-YYYYMMDD` range instead (see "Fetch by date range" below),
+which is the more reliable way ESPN's own site queries by week. Re-test
+after this change and update this file with the actual result.
+
+This session's sandbox also has outbound access to `site.api.espn.com`
+blocked, so the JSON shape assumptions below still haven't been verified
+directly from here — only inferred from the one thin live test.
 
 ## What's here
 
@@ -27,6 +35,25 @@ before trusting it during an actual week.
   preview table, then **Import These Games** — same preview-before-commit
   pattern as the Yahoo flow, so nothing is written to Firebase until you
   explicitly import. The Yahoo paste box stays as the fallback.
+
+## Fetch by date range
+
+The admin panel's ESPN card now has **From/To date pickers** (defaulting to
+today through +6 days) instead of a bare week number. Those get formatted
+into `dates=YYYYMMDD-YYYYMMDD` and sent to ESPN — that's the query that
+actually determines which games come back. "Tag as Week/Season" are separate
+fields that only label the imported game objects (for the app's own
+week-grouping); they don't affect what ESPN returns.
+
+The fetch status line now also shows a `mapped/raw` count per league, e.g.
+`NFL 14/14, FBS 61/63` — pulled from `ESPN_API.lastFetchDebug`. Use it to
+tell apart the two ways this can go wrong:
+- **Low raw count** → the query itself is too narrow (wrong date range, or
+  ESPN just doesn't have much on those dates — check the range covers the
+  right weekend).
+- **raw > mapped** → events came back but some failed to map (missing
+  competitors, unexpected shape) — check the browser console, `mapEventToGame`
+  is probably choking on a field ESPN sends that isn't handled yet.
 
 ## Why it's built this way
 

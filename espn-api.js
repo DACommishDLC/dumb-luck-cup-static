@@ -24,10 +24,20 @@ const ESPN_API = {
     cfb: 'football/college-football'
   },
 
-  async _fetchScoreboard(league, { week, season, seasontype = 2 } = {}) {
-    const params = new URLSearchParams({ seasontype: String(seasontype) });
-    if (week) params.set('week', String(week));
-    if (season) params.set('year', String(season));
+  async _fetchScoreboard(league, { week, season, seasontype = 2, dates } = {}) {
+    // Querying by an explicit date range (`dates=YYYYMMDD-YYYYMMDD`) is the
+    // more reliable way to get a full slate from ESPN — `week` numbering
+    // doesn't always resolve to the games you'd expect, especially for
+    // college football with its many groups/conferences, and can silently
+    // fall back to just "today's" games instead of erroring.
+    const params = new URLSearchParams();
+    if (dates) {
+      params.set('dates', dates);
+    } else {
+      params.set('seasontype', String(seasontype));
+      if (week) params.set('week', String(week));
+      if (season) params.set('year', String(season));
+    }
 
     // 1. Try the same-origin serverless proxy first.
     try {
@@ -119,19 +129,33 @@ const ESPN_API = {
   },
 
   /**
-   * Fetches and maps every game for a given week across one or more
-   * leagues. League labels ('NFL' / 'FBS') match what the rest of the
+   * Fetches and maps every game for a given week/date-range across one or
+   * more leagues. League labels ('NFL' / 'FBS') match what the rest of the
    * admin panel already uses for the `league` field.
+   *
+   * Pass `dates: 'YYYYMMDD-YYYYMMDD'` for the reliable path (recommended).
+   * `week`/`season` are also sent to `week` and `season` are still used to
+   * tag the resulting game objects even in `dates` mode.
+   *
+   * After each call, `ESPN_API.lastFetchDebug` holds
+   * `{ nfl: { raw, mapped }, cfb: { raw, mapped } }` — raw is how many
+   * events ESPN actually returned, mapped is how many survived mapping.
+   * A raw count that's way lower than expected means the query itself
+   * (week/dates/season) is scoped too narrow; a gap between raw and
+   * mapped means events are failing to map (check mapEventToGame).
    */
-  async fetchWeekGames({ week, season, seasontype = 2, leagues = ['nfl', 'cfb'] }) {
+  async fetchWeekGames({ week, season, seasontype = 2, dates, leagues = ['nfl', 'cfb'] }) {
     const labelFor = { nfl: 'NFL', cfb: 'FBS' };
+    this.lastFetchDebug = {};
     const results = await Promise.all(
       leagues.map(async (league) => {
-        const data = await this._fetchScoreboard(league, { week, season, seasontype });
+        const data = await this._fetchScoreboard(league, { week, season, seasontype, dates });
         const events = data.events || [];
-        return events
+        const mapped = events
           .map(ev => this.mapEventToGame(ev, { league: labelFor[league], week, season }))
           .filter(Boolean);
+        this.lastFetchDebug[league] = { raw: events.length, mapped: mapped.length };
+        return mapped;
       })
     );
     return results.flat().sort((a, b) => new Date(a.gameTime) - new Date(b.gameTime));

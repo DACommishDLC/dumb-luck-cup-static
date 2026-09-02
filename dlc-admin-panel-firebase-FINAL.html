@@ -622,18 +622,25 @@
         <h3 style="margin-bottom:6px;">🏈 Auto-load from ESPN (beta)</h3>
         <p style="color:#444; font-size:14px; line-height:1.8; margin-bottom:14px;">
           Pulls this week's games and spreads straight from ESPN — no copy/paste.
-          Still being tested; if a league/week comes back empty or a spread looks
-          wrong, fall back to the Yahoo paste method below and let Da Commish know.
+          Still being tested; if a league/date range comes back thin or a spread
+          looks wrong, fall back to the Yahoo paste method below and let Da Commish know.
         </p>
         <div class="controls" style="margin-bottom:14px;">
           <div class="filter-group">
-            <label style="font-weight:500; font-size:14px;">Week:</label>
-            <input type="number" id="espnWeek" value="8" min="1" max="18" style="width:70px;">
-            <label style="font-weight:500; font-size:14px; margin-left:10px;">Season:</label>
-            <input type="number" id="espnSeason" value="2025" min="2020" max="2030" style="width:80px;">
+            <label style="font-weight:500; font-size:14px;">From:</label>
+            <input type="date" id="espnFromDate" style="width:150px;">
+            <label style="font-weight:500; font-size:14px; margin-left:10px;">To:</label>
+            <input type="date" id="espnToDate" style="width:150px;">
             <label style="font-weight:500; font-size:14px; margin-left:10px;">Leagues:</label>
             <label style="font-size:13px; margin-left:6px;"><input type="checkbox" id="espnIncludeNFL" checked> NFL</label>
             <label style="font-size:13px; margin-left:10px;"><input type="checkbox" id="espnIncludeCFB" checked> FBS</label>
+          </div>
+          <div class="filter-group" style="margin-top:10px;">
+            <label style="font-weight:500; font-size:14px;">Tag as Week:</label>
+            <input type="number" id="espnWeek" value="1" min="1" max="18" style="width:70px;">
+            <label style="font-weight:500; font-size:14px; margin-left:10px;">Season:</label>
+            <input type="number" id="espnSeason" value="2026" min="2020" max="2030" style="width:80px;">
+            <span style="font-size:12px; color:#888; margin-left:10px;">(just labels the imported games — doesn't affect what ESPN returns)</span>
           </div>
         </div>
         <div style="display:flex; gap:12px; align-items:center;">
@@ -819,6 +826,7 @@ Cleveland Browns at Cincinnati Bengals (-7.5, 44.5)
     document.addEventListener('DOMContentLoaded', async () => {
       setupTabs();
       setupDragDrop();
+      initESPNDateDefaults();
       loadGames();
       updateStats();
       
@@ -1577,16 +1585,37 @@ Cleveland Browns at Cincinnati Bengals (-7.5, 44.5)
 
     let espnFetchedGames = [];
 
+    function initESPNDateDefaults() {
+      const fromEl = document.getElementById('espnFromDate');
+      const toEl = document.getElementById('espnToDate');
+      if (!fromEl || !toEl || fromEl.value) return; // don't clobber if already set
+      const today = new Date();
+      const end = new Date(today);
+      end.setDate(end.getDate() + 6);
+      fromEl.value = today.toISOString().slice(0, 10);
+      toEl.value = end.toISOString().slice(0, 10);
+    }
+
     async function fetchFromESPN() {
       const statusEl = document.getElementById('espnFetchStatus');
-      const week = parseInt(document.getElementById('espnWeek').value) || 8;
+      const week = parseInt(document.getElementById('espnWeek').value) || 1;
       const season = parseInt(document.getElementById('espnSeason').value) || new Date().getFullYear();
+      const fromVal = document.getElementById('espnFromDate').value;
+      const toVal = document.getElementById('espnToDate').value;
+      // ESPN's `dates=YYYYMMDD-YYYYMMDD` range query is more reliable than
+      // asking by week number, which doesn't always resolve to the full
+      // slate (especially for college football's many groups/conferences).
+      const dates = (fromVal && toVal) ? `${fromVal.replace(/-/g, '')}-${toVal.replace(/-/g, '')}` : null;
       const leagues = [];
       if (document.getElementById('espnIncludeNFL').checked) leagues.push('nfl');
       if (document.getElementById('espnIncludeCFB').checked) leagues.push('cfb');
 
       if (!leagues.length) {
         statusEl.textContent = '⚠️ Pick at least one league.';
+        return;
+      }
+      if (!dates) {
+        statusEl.textContent = '⚠️ Set a From/To date range.';
         return;
       }
       if (typeof ESPN_API === 'undefined') {
@@ -1596,8 +1625,12 @@ Cleveland Browns at Cincinnati Bengals (-7.5, 44.5)
 
       statusEl.textContent = '⏳ Fetching...';
       try {
-        espnFetchedGames = await ESPN_API.fetchWeekGames({ week, season, leagues });
-        statusEl.textContent = `✅ ${espnFetchedGames.length} game${espnFetchedGames.length !== 1 ? 's' : ''} found`;
+        espnFetchedGames = await ESPN_API.fetchWeekGames({ week, season, dates, leagues });
+        const breakdown = Object.entries(ESPN_API.lastFetchDebug || {})
+          .map(([lg, d]) => `${lg.toUpperCase()} ${d.mapped}/${d.raw}`)
+          .join(', ');
+        statusEl.textContent = `✅ ${espnFetchedGames.length} game${espnFetchedGames.length !== 1 ? 's' : ''} found` +
+          (breakdown ? ` (mapped/raw — ${breakdown})` : '');
         renderESPNPreview();
       } catch (e) {
         console.error('ESPN fetch failed:', e);
