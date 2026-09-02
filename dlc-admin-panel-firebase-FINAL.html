@@ -581,12 +581,6 @@
   <script src="espn-api.js"></script>
 </head>
 <body>
-  <script>
-    if (localStorage.getItem('dlc_admin_unlocked') === 'true') {
-      document.documentElement.classList.add('dlc-admin-unlocked');
-    }
-  </script>
-
   <div id="adminGate">
     <div class="gate-card">
       <div class="gate-icon">🔒</div>
@@ -985,8 +979,9 @@ Cleveland Browns at Cincinnati Bengals (-7.5, 44.5)
     // ─── Admin Access Gate ───────────────────────────────────────────────
     // Not real security (the code lives in this file, readable by anyone
     // who views source) — just a deterrent so family members don't
-    // stumble into the admin panel. Unlock persists per-device via
-    // localStorage so the commissioner isn't re-entering it constantly.
+    // stumble into the admin panel. Deliberately not remembered anywhere
+    // (no localStorage/sessionStorage) — the code is required on every
+    // single visit, every reload.
     const ADMIN_GATE_CODE = '4949';
     let gateValue = '';
 
@@ -1017,7 +1012,6 @@ Cleveland Browns at Cincinnati Bengals (-7.5, 44.5)
 
     function checkGateCode() {
       if (gateValue === ADMIN_GATE_CODE) {
-        localStorage.setItem('dlc_admin_unlocked', 'true');
         document.documentElement.classList.add('dlc-admin-unlocked');
       } else {
         document.getElementById('gateError').textContent = 'Wrong code — try again';
