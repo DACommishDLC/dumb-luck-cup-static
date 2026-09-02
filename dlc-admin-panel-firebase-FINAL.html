@@ -448,6 +448,131 @@
       background: var(--muted);
       color: var(--text);
     }
+
+    /* ─── Admin Access Gate ──────────────────────────────────────────── */
+    #mainContainer { display: none; }
+    html.dlc-admin-unlocked #mainContainer { display: block; }
+    html.dlc-admin-unlocked #adminGate { display: none; }
+
+    #adminGate {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at 30% 20%, #764ba2 0%, #3a2d6b 45%, #14102b 100%);
+      padding: 20px;
+    }
+
+    .gate-card {
+      background: rgba(255,255,255,0.07);
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 20px;
+      padding: 44px 36px;
+      width: 100%;
+      max-width: 340px;
+      text-align: center;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.45);
+      animation: gateIn 0.4s ease;
+    }
+
+    @keyframes gateIn {
+      from { opacity: 0; transform: translateY(16px) scale(0.97); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .gate-card.shake { animation: gateShake 0.4s; }
+
+    @keyframes gateShake {
+      0%, 100% { transform: translateX(0); }
+      20%      { transform: translateX(-8px); }
+      40%      { transform: translateX(8px); }
+      60%      { transform: translateX(-6px); }
+      80%      { transform: translateX(6px); }
+    }
+
+    .gate-icon {
+      font-size: 34px;
+      margin-bottom: 10px;
+      filter: drop-shadow(0 0 14px rgba(245,197,24,0.55));
+    }
+
+    .gate-card h2 {
+      color: #fff;
+      font-size: 19px;
+      font-weight: 700;
+      margin-bottom: 6px;
+      letter-spacing: 0.3px;
+    }
+
+    .gate-card p {
+      color: rgba(255,255,255,0.55);
+      font-size: 13px;
+      margin-bottom: 24px;
+    }
+
+    .gate-dots {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    .gate-dot {
+      width: 44px;
+      height: 54px;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.08);
+      border: 1.5px solid rgba(255,255,255,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      font-weight: 700;
+      color: #f5c518;
+      transition: border-color 0.15s, background 0.15s;
+    }
+
+    .gate-dot.filled {
+      border-color: #f5c518;
+      background: rgba(245,197,24,0.14);
+    }
+
+    .gate-error {
+      color: #ff8a8a;
+      font-size: 12px;
+      min-height: 16px;
+      margin: 8px 0 18px;
+    }
+
+    .gate-keypad {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .gate-key {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.14);
+      color: #fff;
+      font-size: 18px;
+      font-weight: 600;
+      font-family: inherit;
+      padding: 14px 0;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+    }
+
+    .gate-key:hover  { background: rgba(255,255,255,0.16); }
+    .gate-key:active { transform: scale(0.94); }
+
+    .gate-key-clear, .gate-key-back {
+      font-size: 13px;
+      color: rgba(255,255,255,0.6);
+    }
   </style>
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -456,7 +581,42 @@
   <script src="espn-api.js"></script>
 </head>
 <body>
-  <div class="container">
+  <script>
+    if (localStorage.getItem('dlc_admin_unlocked') === 'true') {
+      document.documentElement.classList.add('dlc-admin-unlocked');
+    }
+  </script>
+
+  <div id="adminGate">
+    <div class="gate-card">
+      <div class="gate-icon">🔒</div>
+      <h2>Commissioner Access</h2>
+      <p>Enter the admin code to continue</p>
+      <div class="gate-dots">
+        <div class="gate-dot"></div>
+        <div class="gate-dot"></div>
+        <div class="gate-dot"></div>
+        <div class="gate-dot"></div>
+      </div>
+      <div class="gate-error" id="gateError"></div>
+      <div class="gate-keypad">
+        <button type="button" class="gate-key" onclick="gateKeyPress('1')">1</button>
+        <button type="button" class="gate-key" onclick="gateKeyPress('2')">2</button>
+        <button type="button" class="gate-key" onclick="gateKeyPress('3')">3</button>
+        <button type="button" class="gate-key" onclick="gateKeyPress('4')">4</button>
+        <button type="button" class="gate-key" onclick="gateKeyPress('5')">5</button>
+        <button type="button" class="gate-key" onclick="gateKeyPress('6')">6</button>
+        <button type="button" class="gate-key" onclick="gateKeyPress('7')">7</button>
+        <button type="button" class="gate-key" onclick="gateKeyPress('8')">8</button>
+        <button type="button" class="gate-key" onclick="gateKeyPress('9')">9</button>
+        <button type="button" class="gate-key gate-key-clear" onclick="gateClear()">Clear</button>
+        <button type="button" class="gate-key" onclick="gateKeyPress('0')">0</button>
+        <button type="button" class="gate-key gate-key-back" onclick="gateBackspace()">⌫</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="mainContainer" class="container">
     <header>
       <h1>🏈 Dumb Luck Cup - Game Management</h1>
       <p class="subtitle">Commissioner Admin Panel</p>
@@ -821,7 +981,60 @@ Cleveland Browns at Cincinnati Bengals (-7.5, 44.5)
     // In-memory database (will be replaced with Firebase/Supabase)
     let games = [];
     let currentEditingGame = null;
-    
+
+    // ─── Admin Access Gate ───────────────────────────────────────────────
+    // Not real security (the code lives in this file, readable by anyone
+    // who views source) — just a deterrent so family members don't
+    // stumble into the admin panel. Unlock persists per-device via
+    // localStorage so the commissioner isn't re-entering it constantly.
+    const ADMIN_GATE_CODE = '4949';
+    let gateValue = '';
+
+    function renderGateDots() {
+      document.querySelectorAll('.gate-dot').forEach((dot, i) => {
+        dot.textContent = gateValue[i] || '';
+        dot.classList.toggle('filled', !!gateValue[i]);
+      });
+    }
+
+    function gateKeyPress(digit) {
+      if (gateValue.length >= 4) return;
+      gateValue += digit;
+      document.getElementById('gateError').textContent = '';
+      renderGateDots();
+      if (gateValue.length === 4) setTimeout(checkGateCode, 150);
+    }
+
+    function gateBackspace() {
+      gateValue = gateValue.slice(0, -1);
+      renderGateDots();
+    }
+
+    function gateClear() {
+      gateValue = '';
+      renderGateDots();
+    }
+
+    function checkGateCode() {
+      if (gateValue === ADMIN_GATE_CODE) {
+        localStorage.setItem('dlc_admin_unlocked', 'true');
+        document.documentElement.classList.add('dlc-admin-unlocked');
+      } else {
+        document.getElementById('gateError').textContent = 'Wrong code — try again';
+        const card = document.querySelector('.gate-card');
+        card.classList.add('shake');
+        setTimeout(() => card.classList.remove('shake'), 400);
+        gateValue = '';
+        setTimeout(renderGateDots, 250);
+      }
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (document.documentElement.classList.contains('dlc-admin-unlocked')) return;
+      if (/^[0-9]$/.test(e.key)) gateKeyPress(e.key);
+      else if (e.key === 'Backspace') gateBackspace();
+    });
+
     // Initialize
     document.addEventListener('DOMContentLoaded', async () => {
       setupTabs();
