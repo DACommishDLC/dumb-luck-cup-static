@@ -945,13 +945,28 @@
     const homeFavored = game.currentSpread <= 0;
     const spreadValue = Math.abs(game.currentSpread);
 
-    const favTeam  = homeFavored ? game.homeTeam : game.awayTeam;
-    const dogTeam  = homeFavored ? game.awayTeam : game.homeTeam;
-    const favAbbr  = homeFavored ? game.homeAbbr : game.awayAbbr;
-    const dogAbbr  = homeFavored ? game.awayAbbr : game.homeAbbr;
-
     const pickedFav = myPick && myPick.side === 'favorite';
     const pickedDog = myPick && myPick.side === 'underdog';
+
+    // Pick buttons are laid out to match the teams-row above (away on the
+    // left, home on the right) rather than always favorite-left/dog-right —
+    // otherwise the FAVORITE button can end up under the wrong team.
+    const awaySide = {
+      team: game.awayTeam, label: homeFavored ? 'UNDERDOG' : 'FAVORITE',
+      spread: homeFavored ? `+${spreadValue}` : `-${spreadValue}`,
+      side: homeFavored ? 'underdog' : 'favorite',
+      picked: homeFavored ? pickedDog : pickedFav,
+      spreadClass: homeFavored ? 'dog-spread' : 'fav-spread',
+      selectedClass: homeFavored ? 'selected-dog' : 'selected-fav'
+    };
+    const homeSide = {
+      team: game.homeTeam, label: homeFavored ? 'FAVORITE' : 'UNDERDOG',
+      spread: homeFavored ? `-${spreadValue}` : `+${spreadValue}`,
+      side: homeFavored ? 'favorite' : 'underdog',
+      picked: homeFavored ? pickedFav : pickedDog,
+      spreadClass: homeFavored ? 'fav-spread' : 'dog-spread',
+      selectedClass: homeFavored ? 'selected-fav' : 'selected-dog'
+    };
 
     const updatedAgo = formatTimeSince(game.spreadLastUpdated);
 
@@ -984,18 +999,18 @@
           ${!isLocked ? `
           <div class="pick-row">
             <button
-              class="pick-btn ${pickedFav ? 'selected-fav' : ''}"
-              onclick="makePick('${game.id}', '${favTeam}', -${spreadValue}, 'favorite')"
+              class="pick-btn ${awaySide.picked ? awaySide.selectedClass : ''}"
+              onclick="makePick('${game.id}', '${awaySide.team}', ${awaySide.spread}, '${awaySide.side}')"
             >
-              <div class="pick-btn-spread fav-spread">-${spreadValue}</div>
-              <div class="pick-btn-label">FAVORITE</div>
+              <div class="pick-btn-spread ${awaySide.spreadClass}">${awaySide.spread}</div>
+              <div class="pick-btn-label">${awaySide.label}</div>
             </button>
             <button
-              class="pick-btn ${pickedDog ? 'selected-dog' : ''}"
-              onclick="makePick('${game.id}', '${dogTeam}', +${spreadValue}, 'underdog')"
+              class="pick-btn ${homeSide.picked ? homeSide.selectedClass : ''}"
+              onclick="makePick('${game.id}', '${homeSide.team}', ${homeSide.spread}, '${homeSide.side}')"
             >
-              <div class="pick-btn-spread dog-spread">+${spreadValue}</div>
-              <div class="pick-btn-label">UNDERDOG</div>
+              <div class="pick-btn-spread ${homeSide.spreadClass}">${homeSide.spread}</div>
+              <div class="pick-btn-label">${homeSide.label}</div>
             </button>
           </div>
           <div class="spread-updated">Spread updated ${updatedAgo}</div>
