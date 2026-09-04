@@ -1857,10 +1857,12 @@ Cleveland Browns at Cincinnati Bengals (-7.5, 44.5)
           : (g.currentSpread <= 0
               ? `${g.homeAbbr} ${g.currentSpread}`
               : `${g.awayAbbr} -${g.currentSpread}`);
+        const awayLabel = (g.awayRank ? `#${g.awayRank} ` : '') + g.awayTeam;
+        const homeLabel = (g.homeRank ? `#${g.homeRank} ` : '') + g.homeTeam;
         return `<tr>
           <td style="padding:8px 12px;font-size:13px;">${i + 1}</td>
           <td style="padding:8px 12px;font-size:12px;color:#666;">${g.league}</td>
-          <td style="padding:8px 12px;font-size:13px;font-weight:500;">${g.awayTeam} @ ${g.homeTeam}</td>
+          <td style="padding:8px 12px;font-size:13px;font-weight:500;">${awayLabel} @ ${homeLabel}</td>
           <td style="padding:8px 12px;font-size:13px;color:#10b981;font-weight:600;">${spreadLabel}</td>
           <td style="padding:8px 12px;font-size:12px;color:#999;">${new Date(g.gameTime).toLocaleString()}</td>
         </tr>`;

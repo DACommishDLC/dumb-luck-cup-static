@@ -107,6 +107,13 @@ const ESPN_API = {
     const stateMap = { pre: 'scheduled', in: 'live', post: 'final' };
     const espnState = competition.status?.type?.state;
 
+    // ESPN reports AP/CFP rank as curatedRank.current, using 99 for
+    // "unranked" rather than omitting the field — only 1-25 counts.
+    const rankOf = (competitor) => {
+      const r = competitor.curatedRank?.current;
+      return (typeof r === 'number' && r >= 1 && r <= 25) ? r : null;
+    };
+
     return {
       id: `espn-${event.id}`,
       week: week ?? event.week?.number ?? null,
@@ -114,8 +121,10 @@ const ESPN_API = {
       league,
       homeTeam: home.team.displayName,
       homeAbbr: home.team.abbreviation,
+      homeRank: rankOf(home),
       awayTeam: away.team.displayName,
       awayAbbr: away.team.abbreviation,
+      awayRank: rankOf(away),
       gameTime: competition.date,
       currentSpread,
       spreadLastUpdated: new Date().toISOString(),

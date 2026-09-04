@@ -20,9 +20,14 @@ directly from here — only inferred from the one thin live test.
   exact same game-object shape the admin panel already uses for Yahoo-pasted
   games (`id`, `week`, `season`, `league`, `homeTeam`, `homeAbbr`, `awayTeam`,
   `awayAbbr`, `gameTime`, `currentSpread`, `status`, `homeScore`, `awayScore`,
-  `spreadResult`, …). Because it reuses that shape, ESPN-sourced games work
-  with picks, locking, scoring, and the leaderboard with zero changes needed
-  in those files.
+  `spreadResult`, …), plus two fields Yahoo-pasted games don't have:
+  `homeRank`/`awayRank` — AP/CFP poll rank (1-25) when ESPN reports the team
+  as ranked, `null` otherwise, pulled from `curatedRank.current` (ESPN uses
+  `99` for unranked, not a missing field — the mapper only keeps 1-25).
+  Shown as a badge next to the team name on the picks page and in the
+  admin's ESPN preview table. Because the rest of the shape matches, ESPN-
+  sourced games work with picks, locking, scoring, and the leaderboard with
+  zero changes needed in those files.
 - **`api/espn-scoreboard.js`** — a Vercel serverless function that proxies
   `site.api.espn.com/apis/site/v2/sports/football/{nfl|college-football}/scoreboard`.
   `espn-api.js` calls this first (same-origin, no browser CORS risk, keeps the
