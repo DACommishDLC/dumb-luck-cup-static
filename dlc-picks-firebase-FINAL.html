@@ -169,6 +169,23 @@
 
     .filter-btn.nfl-filter.active { border-color: var(--nfl); color: var(--nfl); }
     .filter-btn.fbs-filter.active { border-color: var(--fbs); color: var(--fbs); }
+    .filter-btn.conf-filter.active { border-color: var(--fbs); color: var(--fbs); }
+
+    .filter-btn.conf-filter {
+      font-size: 12px;
+      padding: 6px 12px;
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+    }
+
+    .filter-divider {
+      flex-shrink: 0;
+      width: 1px;
+      align-self: stretch;
+      background: var(--border);
+      margin: 2px 4px;
+    }
 
     /* ── Search ──────────────────────────────────── */
     .search-wrap {
@@ -651,6 +668,7 @@
   }
 
 </script>
+  <script src="fbs-conferences.js"></script>
 </head>
 <body>
 
@@ -675,10 +693,13 @@
 
 
 <!-- ── Filter bar ──────────────────────────────────── -->
-<div class="filter-bar">
+<div class="filter-bar" id="filterBar">
   <button class="filter-btn active" data-filter="all" onclick="setFilter(this, 'all')">All Games</button>
   <button class="filter-btn nfl-filter" data-filter="NFL" onclick="setFilter(this, 'NFL')">🏈 NFL</button>
+  <div class="filter-divider"></div>
   <button class="filter-btn fbs-filter" data-filter="FBS" onclick="setFilter(this, 'FBS')">🎓 FBS</button>
+  <span id="confChipsAnchor"></span>
+  <div class="filter-divider"></div>
   <button class="filter-btn" data-filter="my-picks" onclick="setFilter(this, 'my-picks')">⭐ My Picks</button>
   <button class="filter-btn" data-filter="unpicked" onclick="setFilter(this, 'unpicked')">◯ Unpicked</button>
 </div>
@@ -788,8 +809,17 @@
 
   // ── Boot ─────────────────────────────────────────
   document.addEventListener('DOMContentLoaded', async () => {
+    renderConferenceChips();
     loadGames();
   });
+
+  function renderConferenceChips() {
+    const anchor = document.getElementById('confChipsAnchor');
+    if (!anchor || typeof FBS_CONFERENCES === 'undefined') return;
+    anchor.innerHTML = FBS_CONFERENCES.map(c =>
+      `<button class="filter-btn conf-filter" data-filter="conf:${c.key}" onclick="setFilter(this, 'conf:${c.key}')">${c.label}</button>`
+    ).join('');
+  }
 
   async function loadGames() {
     // Load from Firebase first
@@ -862,6 +892,17 @@
     return games.filter(g => {
       if (currentFilter === 'NFL' && g.league !== 'NFL') return false;
       if (currentFilter === 'FBS' && g.league !== 'FBS') return false;
+      if (currentFilter.startsWith('conf:')) {
+        // FBS-only: several school names are prefixes of NFL team names
+        // (e.g. "Washington" / Washington Commanders, "Indiana" /
+        // Indianapolis Colts, "Kansas" / Kansas City Chiefs) and would
+        // false-match an NFL game otherwise.
+        if (g.league !== 'FBS') return false;
+        const confKey = currentFilter.slice(5);
+        const homeConf = typeof getConferenceForTeam === 'function' ? getConferenceForTeam(g.homeTeam) : null;
+        const awayConf = typeof getConferenceForTeam === 'function' ? getConferenceForTeam(g.awayTeam) : null;
+        if (homeConf !== confKey && awayConf !== confKey) return false;
+      }
       if (currentFilter === 'my-picks' && !picks[g.id]) return false;
       if (currentFilter === 'unpicked' && picks[g.id]) return false;
       if (search) {
