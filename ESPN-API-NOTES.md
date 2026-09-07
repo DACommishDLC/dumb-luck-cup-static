@@ -126,10 +126,35 @@ Source URL: `sports.yahoo.com/nfl/schedule/` (and the
 guess at a `/betting/` path that 404d in production. The commissioner
 confirmed the NFL schedule URL is stable and always shows the current
 week — no per-week URL to maintain, unlike the old article-based pages
-this originally pointed at. The FBS URL follows the same pattern but
-wasn't separately confirmed. If either starts 404ing or coming back with
+this originally pointed at. If either starts 404ing or coming back with
 0 parsed games, the admin panel's Yahoo card has a URL field to override
 it live without a code change — check that first.
+
+**FBS confirmed live (2026-09-07) — meaningfully different from NFL, both
+now handled by `parseYahooSchedule()`:**
+
+- The plain `college-football/schedule/` URL renders a **"Top 25
+  Schedule"** — only games involving a ranked team, not the full FBS
+  slate. The page itself shows an "All FBS" filter link for the rest, but
+  that URL wasn't captured live. If full weekly coverage (not just
+  ranked-team games) is needed, grab the "All FBS" URL from a browser and
+  paste it into the admin panel's URL override field, or hardcode it here
+  once confirmed.
+- Ranked teams get a leading rank number on their line (`"14 USC USC"` →
+  rank 14, team "USC", abbr "USC"). Parsed into `awayRank`/`homeRank`,
+  same field ESPN's mapper already populates — Yahoo-imported games now
+  get the same rank badge on the picks page and preview table that
+  ESPN-imported games did.
+- Because it's a rolling "this week" view, the page mixes games already
+  played (final score + a stat-leader line as the details block) with
+  games not yet kicked off (a single odds line, same shape as NFL). The
+  parser drops already-played games entirely rather than importing them —
+  they'd get stamped with a fake future `gameTime` and look pickable,
+  which would be actively wrong, not just imprecise.
+- Detail-block line count is no longer assumed fixed at 1 (NFL always is);
+  the parser now scans forward from each team-line pair to the next one,
+  so it copes with 1-line (upcoming) or 2-line (final score + leader)
+  blocks without the two formats needing separate code paths.
 
 This makes it meaningfully more fragile than the ESPN path:
 - No JSON contract — any redesign of Yahoo's page markup can silently

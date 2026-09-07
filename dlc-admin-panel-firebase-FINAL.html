@@ -2403,48 +2403,90 @@ Cleveland Browns at Cincinnati Bengals (-7.5, 44.5)
     };
 
     // Yahoo's schedule page (sports.yahoo.com/{nfl|college-football}/schedule/)
-    // lists each game as three lines once stripped to plain text:
+    // lists each game as a pair of team lines followed by a variable-length
+    // details block:
     //   Away Team ABBR
     //   Home Team ABBR
+    //   ...one or more details lines...
+    // Confirmed against a real fetch of both the NFL and FBS pages, and the
+    // two turned out to need meaningfully different handling:
+    //
+    // NFL: always exactly one details line -
     //   Network Tickets from $N [FAVORITE_ABBR -SPREAD O/U TOTAL]
-    // The odds portion is only present once a line's been posted - games
-    // without one just end after the ticket price, which is handled as
-    // "no spread yet" (currentSpread: null) rather than a parse failure.
-    // Confirmed against a real fetch of the NFL page; the FBS schedule page
-    // wasn't separately checked but is assumed to share the same template.
+    // (the odds portion only appears once a line's posted; no odds yet is
+    // "no spread" (currentSpread: null), not a parse failure.)
+    //
+    // FBS: the default page URL renders a "Top 25 Schedule" - only games
+    // involving a ranked team, not the full slate (there's an "All FBS"
+    // filter on the page for the rest, not separately confirmed as its own
+    // URL). Two more differences from NFL show up there:
+    //   - A ranked team's line is prefixed with its rank number, e.g.
+    //     "14 USC USC" (rank 14, team "USC", abbr "USC").
+    //   - Because the page is a rolling "this week" view, it mixes games
+    //     already played (details block is a final-score line plus a
+    //     stat-leader line, e.g. "USC 42 - SJSU 26" / "J. Maiava 286 Pass
+    //     Yds...") with games that haven't kicked off yet (a single
+    //     odds line, same shape as NFL's). Already-played games are
+    //     dropped entirely here rather than imported - there's no real
+    //     kickoff time for them, and stamping one with a fake future
+    //     gameTime would make a finished game look pickable.
+    // Team lines are reliably told apart from either kind of details line
+    // because a team line always ends in an all-caps abbreviation, while a
+    // score line ends in a score digit and an odds line ends in the total
+    // (both digits) - so games are parsed by scanning for the next team-line
+    // pair rather than assuming a fixed line count per game.
     function parseYahooSchedule(text) {
       const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
-      const teamLine = /^(.+?)\s+([A-Z]{2,4})$/;
-      const oddsTail = /([A-Z]{2,4})\s+(-?\d+(?:\.\d+)?)\s+O\/U\s+(\d+(?:\.\d+)?)\s*$/;
+      const teamLine = /^(?:(\d{1,2})\s+)?(.+?)\s+([A-Z]{2,5})$/;
+      const oddsTail = /([A-Z0-9]{2,5})\s+(-?\d+(?:\.\d+)?)\s+O\/U\s+(\d+(?:\.\d+)?)\s*$/;
+      const scoreLine = /\d{1,3}\s*-\s*.+\d{1,3}$/;
+      const isHeader = (line) => /^Away\s+Home\b/i.test(line);
+      const isTeamLine = (line) => !isHeader(line) && teamLine.test(line);
 
       const games = [];
       let i = 0;
       while (i < lines.length) {
-        if (/^Away\s+Home\s+Time\s+Network\s+Tickets\s+Odds$/i.test(lines[i])) {
-          i++;
-          continue;
-        }
+        if (isHeader(lines[i])) { i++; continue; }
 
-        const awayMatch = lines[i] && lines[i].match(teamLine);
-        const homeMatch = lines[i + 1] && lines[i + 1].match(teamLine);
-        const detailsLine = lines[i + 2];
+        const awayOk = isTeamLine(lines[i]);
+        const homeOk = awayOk && lines[i + 1] && isTeamLine(lines[i + 1]);
 
-        if (awayMatch && homeMatch && detailsLine !== undefined) {
-          const awayAbbr = awayMatch[2];
-          const homeAbbr = homeMatch[2];
-          const awayTeam = NFL_TEAM_NAMES[awayAbbr] || awayMatch[1].trim();
-          const homeTeam = NFL_TEAM_NAMES[homeAbbr] || homeMatch[1].trim();
+        if (awayOk && homeOk) {
+          const awayMatch = lines[i].match(teamLine);
+          const homeMatch = lines[i + 1].match(teamLine);
+          const awayRank = awayMatch[1] ? parseInt(awayMatch[1], 10) : null;
+          const homeRank = homeMatch[1] ? parseInt(homeMatch[1], 10) : null;
+          const awayAbbr = awayMatch[3];
+          const homeAbbr = homeMatch[3];
+          const awayTeam = NFL_TEAM_NAMES[awayAbbr] || awayMatch[2].trim();
+          const homeTeam = NFL_TEAM_NAMES[homeAbbr] || homeMatch[2].trim();
 
-          const oddsMatch = detailsLine.match(oddsTail);
-          let spread = null, rawSpread = null;
-          if (oddsMatch) {
-            const favoriteAbbr = oddsMatch[1];
-            rawSpread = parseFloat(oddsMatch[2]);
-            spread = (favoriteAbbr === homeAbbr) ? rawSpread : Math.abs(rawSpread);
+          // Collect every details line up to the next team-line pair (or
+          // header, or end of text) - this is what makes the variable
+          // 1-line (upcoming) vs 2-line (already played) blocks work.
+          let j = i + 2;
+          const details = [];
+          while (j < lines.length) {
+            const nextIsPair = isTeamLine(lines[j]) && lines[j + 1] && isTeamLine(lines[j + 1]);
+            if (isHeader(lines[j]) || nextIsPair) break;
+            details.push(lines[j]);
+            j++;
           }
 
-          games.push({ awayTeam, awayAbbr, homeTeam, homeAbbr, spread, rawSpread, day: null, time: null });
-          i += 3;
+          const alreadyPlayed = details.some(d => scoreLine.test(d));
+          if (!alreadyPlayed) {
+            let spread = null, rawSpread = null;
+            for (const d of details) {
+              const oddsMatch = d.match(oddsTail);
+              if (oddsMatch) {
+                const favoriteAbbr = oddsMatch[1];
+                rawSpread = parseFloat(oddsMatch[2]);
+                spread = (favoriteAbbr === homeAbbr) ? rawSpread : Math.abs(rawSpread);
+              }
+            }
+            games.push({ awayTeam, awayAbbr, awayRank, homeTeam, homeAbbr, homeRank, spread, rawSpread, day: null, time: null });
+          }
+          i = j;
         } else {
           i += 1;
         }
@@ -2541,9 +2583,11 @@ Cleveland Browns at Cincinnati Bengals (-7.5, 44.5)
         const favLabel = (g.spread === null || g.spread === undefined)
           ? 'No line yet'
           : (g.spread <= 0 ? `${g.homeTeam} (${g.spread})` : `${g.awayTeam} (${g.rawSpread})`);
+        const awayLabel = (g.awayRank ? `#${g.awayRank} ` : '') + g.awayTeam;
+        const homeLabel = (g.homeRank ? `#${g.homeRank} ` : '') + g.homeTeam;
         return `<tr>
           <td style="padding:8px 12px;font-size:13px;">${i + 1}</td>
-          <td style="padding:8px 12px;font-size:13px;font-weight:500;">${g.awayTeam} @ ${g.homeTeam}</td>
+          <td style="padding:8px 12px;font-size:13px;font-weight:500;">${awayLabel} @ ${homeLabel}</td>
           <td style="padding:8px 12px;font-size:13px;color:#667eea;font-weight:600;">${favLabel}</td>
           <td style="padding:8px 12px;font-size:12px;color:#999;">${g.time || g.day}</td>
         </tr>`;
@@ -2631,8 +2675,10 @@ Cleveland Browns at Cincinnati Bengals (-7.5, 44.5)
         league,
         homeTeam:          g.homeTeam,
         homeAbbr:          g.homeAbbr || g.homeTeam.split(' ').slice(-1)[0].substring(0, 3).toUpperCase(),
+        homeRank:          g.homeRank || null,
         awayTeam:          g.awayTeam,
         awayAbbr:          g.awayAbbr || g.awayTeam.split(' ').slice(-1)[0].substring(0, 3).toUpperCase(),
+        awayRank:          g.awayRank || null,
         gameTime:          parseYahooGameTime(g.day, g.time),
         currentSpread:     (g.spread === undefined ? null : g.spread),
         spreadLastUpdated: new Date().toISOString(),
