@@ -824,12 +824,20 @@
           need a manual paste if Yahoo changes their page. Always check the preview below
           before importing either way.
         </p>
+        <div style="margin-bottom:14px;">
+          <label style="display:block; font-weight:500; font-size:13px; margin-bottom:6px;">
+            Yahoo page to fetch (edit this if it 404s — Yahoo restructures their site sometimes):
+          </label>
+          <input type="text" id="yahooSourceUrl" placeholder="Leave blank to use the default for the selected league below"
+                 style="width:100%; padding:8px 12px; border:1px solid #ccc; border-radius:6px; font-size:13px; font-family:monospace;">
+        </div>
         <div style="display:flex; gap:12px; align-items:center; margin-bottom:14px;">
           <button class="btn btn-primary" onclick="fetchFromYahoo()">🔄 Fetch from Yahoo</button>
           <span id="yahooFetchStatus" style="font-size:13px; color:#666;"></span>
         </div>
         <ol style="color:#444; font-size:14px; line-height:2; margin-left:18px;">
-          <li>Or go to <strong>sports.yahoo.com/nfl/betting</strong> (or college-football)</li>
+          <li>Or go to Yahoo Sports yourself and find the current spreads page (their URLs move — try
+              <strong>sports.yahoo.com/nfl/odds</strong> or search "yahoo sports nfl odds")</li>
           <li>Find the weekly spreads article (e.g. "Full list of Week 8 spreads")</li>
           <li>Select all the game lines and copy them</li>
           <li>Paste below — the parser does the rest</li>
@@ -2352,10 +2360,15 @@ Cleveland Browns at Cincinnati Bengals (-7.5, 44.5)
       const statusEl = document.getElementById('yahooFetchStatus');
       const leagueSelect = document.getElementById('pasteLeague').value; // 'NFL' or 'FBS'
       const league = leagueSelect === 'FBS' ? 'fbs' : 'nfl';
+      const customUrl = document.getElementById('yahooSourceUrl').value.trim();
+
+      const query = customUrl
+        ? `url=${encodeURIComponent(customUrl)}`
+        : `league=${league}`;
 
       statusEl.textContent = '⏳ Fetching from Yahoo...';
       try {
-        const res = await fetch(`/api/yahoo-scoreboard?league=${league}`);
+        const res = await fetch(`/api/yahoo-scoreboard?${query}`);
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || `Yahoo fetch failed (${res.status})`);
 

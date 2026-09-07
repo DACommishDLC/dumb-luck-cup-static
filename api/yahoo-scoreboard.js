@@ -16,6 +16,15 @@
 // preview table before importing - same as manual paste.
 //
 // GET /api/yahoo-scoreboard?league=nfl|fbs
+// GET /api/yahoo-scoreboard?url=https://sports.yahoo.com/...  (overrides league default)
+//
+// The `url` override exists because the default guesses below are just
+// that - guesses, unverified against Yahoo's live site (see caveat
+// above). If Yahoo restructures their site and this starts 404ing, the
+// admin panel's Yahoo card has a URL field so anyone can just paste in
+// whatever page currently has the spreads without needing a code change
+// here. Restricted to yahoo.com hosts so this can't be turned into an
+// open proxy for arbitrary URLs.
 
 const SOURCE_URLS = {
   nfl: 'https://sports.yahoo.com/nfl/betting/',
@@ -30,11 +39,28 @@ module.exports = async (req, res) => {
     return;
   }
 
-  const { league = 'nfl' } = req.query;
-  const url = SOURCE_URLS[league];
-  if (!url) {
-    res.status(400).json({ error: `Unknown league "${league}". Use "nfl" or "fbs".` });
-    return;
+  const { league = 'nfl', url: customUrl } = req.query;
+
+  let url;
+  if (customUrl) {
+    let parsed;
+    try {
+      parsed = new URL(customUrl);
+    } catch (e) {
+      res.status(400).json({ error: 'Invalid url parameter.' });
+      return;
+    }
+    if (!/(^|\.)yahoo\.com$/i.test(parsed.hostname)) {
+      res.status(400).json({ error: 'url must be a yahoo.com page.' });
+      return;
+    }
+    url = parsed.toString();
+  } else {
+    url = SOURCE_URLS[league];
+    if (!url) {
+      res.status(400).json({ error: `Unknown league "${league}". Use "nfl" or "fbs".` });
+      return;
+    }
   }
 
   try {
