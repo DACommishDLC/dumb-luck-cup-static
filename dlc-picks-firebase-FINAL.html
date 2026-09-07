@@ -90,32 +90,33 @@
       margin-bottom: 20px;
     }
 
-    /* Player info + pick counter + submit, as a control row under the hero */
-    .header-controls {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 12px 20px;
-      position: relative;
-      z-index: 1;
-    }
-
-    .player-name {
+    .player-name-corner {
+      position: absolute;
+      top: 16px;
+      right: 20px;
       font-size: 13px;
       color: rgba(0,0,0,0.6);
+      z-index: 2;
     }
 
-    .player-name span {
+    @media (max-width: 420px) {
+      .player-name-corner { font-size: 11px; top: 12px; right: 12px; }
+    }
+
+    .player-name-corner span {
       color: #000;
       font-weight: 600;
     }
 
-    /* Pick counter pill */
+    /* Pick counter + submit, centered under the hero */
     .pick-counter {
       display: flex;
+      justify-content: center;
       align-items: center;
+      flex-wrap: wrap;
       gap: 10px;
+      position: relative;
+      z-index: 1;
     }
 
     .counter-pill {
@@ -711,7 +712,7 @@
     .nav-btn {
       background: var(--border);
       border: 1px solid transparent;
-      color: #ffffff;
+      color: var(--muted);
       border-radius: 20px;
       padding: 8px 18px;
       font-family: 'DM Sans', sans-serif;
@@ -779,18 +780,6 @@
 <body>
 
 <!-- ── Header ─────────────────────────────────────── -->
-<header>
-  <div class="header-icon">🏈</div>
-  <h1 class="logo">DUMB LUCK CUP</h1>
-  <div class="header-subtitle" id="headerSubtitle">Week 1 · 2026 Season</div>
-  <div class="header-controls">
-    <div class="player-name">Playing as <span id="playerNameDisplay">—</span> <a href="#" onclick="switchPlayer(); return false;" style="color:var(--muted); font-size:11px; text-decoration:underline; margin-left:4px;">(switch)</a></div>
-    <div class="pick-counter">
-      <div class="counter-pill" id="counterPill">0 / 10 picks</div>
-      <button class="submit-btn" id="submitBtn" onclick="submitPicks()">Submit Picks</button>
-    </div>
-  </div>
-</header>
 <nav class="page-nav">
   <a href="/" class="nav-btn">🏈 Make Picks</a>
   <a href="/dlc-leaderboard-firebase-FINAL.html" class="nav-btn">📊 Leaderboard</a>
@@ -798,6 +787,16 @@
   <a href="/dlc-rules.html" class="nav-btn">📖 Rules & FAQ</a>
   <a href="/dlc-admin-panel-firebase-FINAL.html" class="nav-btn">⚙️ Admin</a>
 </nav>
+<header>
+  <div class="player-name-corner">Playing as <span id="playerNameDisplay">—</span> <a href="#" onclick="switchPlayer(); return false;" style="color:rgba(0,0,0,0.55); text-decoration:underline; margin-left:4px;">(switch)</a></div>
+  <div class="header-icon">🏈</div>
+  <h1 class="logo">DUMB LUCK CUP</h1>
+  <div class="header-subtitle" id="headerSubtitle">Week 1 · 2026 Season</div>
+  <div class="pick-counter">
+    <div class="counter-pill" id="counterPill">0 / 10 picks</div>
+    <button class="submit-btn" id="submitBtn" onclick="submitPicks()">Submit Picks</button>
+  </div>
+</header>
 
 
 <!-- ── Filter bar ──────────────────────────────────── -->
