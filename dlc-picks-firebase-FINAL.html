@@ -33,21 +33,19 @@
     header {
       background: linear-gradient(135deg, #f5c518 0%, #d4a017 100%);
       border-bottom: 1px solid var(--border);
-      padding: 16px 20px;
-      position: sticky;
-      top: 0;
-      z-index: 100;
+      padding: 40px 20px 36px;
+      text-align: center;
       position: relative;
       overflow: hidden;
     }
-    
+
     header::before {
       content: '🏈';
       position: absolute;
-      font-size: 150px;
+      font-size: 200px;
       opacity: 0.1;
-      top: -20px;
-      right: -20px;
+      top: -30px;
+      right: -30px;
       transform: rotate(-15deg);
       pointer-events: none;
       animation: headerBallFloat 5s ease-in-out infinite;
@@ -58,38 +56,54 @@
       50%      { transform: rotate(-8deg) translateY(-8px); }
     }
 
-    .header-top {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+    .header-icon {
+      font-size: 64px;
       margin-bottom: 12px;
-    }
-
-    .logo-block {
+      filter: drop-shadow(0 4px 20px rgba(0,0,0,0.3));
       position: relative;
       z-index: 1;
+      display: inline-block;
+      animation: headerBallPulse 2.8s ease-in-out infinite;
+    }
+
+    @keyframes headerBallPulse {
+      0%, 100% { transform: scale(1); }
+      50%      { transform: scale(1.08); }
     }
 
     .logo {
       font-family: 'Bebas Neue', sans-serif;
-      font-size: 28px;
-      letter-spacing: 1.5px;
+      font-size: 48px;
+      letter-spacing: 2px;
       color: #000;
-      line-height: 1.1;
+      margin-bottom: 8px;
+      position: relative;
+      z-index: 1;
     }
 
     .header-subtitle {
-      font-size: 12px;
-      color: rgba(0,0,0,0.65);
+      font-size: 16px;
+      color: rgba(0,0,0,0.7);
       font-weight: 600;
-      margin-top: 2px;
+      position: relative;
+      z-index: 1;
+      margin-bottom: 20px;
+    }
+
+    /* Player info + pick counter + submit, as a control row under the hero */
+    .header-controls {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px 20px;
+      position: relative;
+      z-index: 1;
     }
 
     .player-name {
       font-size: 13px;
       color: rgba(0,0,0,0.6);
-      position: relative;
-      z-index: 1;
     }
 
     .player-name span {
@@ -766,16 +780,15 @@
 
 <!-- ── Header ─────────────────────────────────────── -->
 <header>
-  <div class="header-top">
-    <div class="logo-block">
-      <div class="logo">🏈 DUMB LUCK CUP</div>
-      <div class="header-subtitle" id="headerSubtitle">Week 1 · 2026 Season</div>
-    </div>
+  <div class="header-icon">🏈</div>
+  <h1 class="logo">DUMB LUCK CUP</h1>
+  <div class="header-subtitle" id="headerSubtitle">Week 1 · 2026 Season</div>
+  <div class="header-controls">
     <div class="player-name">Playing as <span id="playerNameDisplay">—</span> <a href="#" onclick="switchPlayer(); return false;" style="color:var(--muted); font-size:11px; text-decoration:underline; margin-left:4px;">(switch)</a></div>
-  </div>
-  <div class="pick-counter">
-    <div class="counter-pill" id="counterPill">0 / 10 picks</div>
-    <button class="submit-btn" id="submitBtn" onclick="submitPicks()">Submit Picks</button>
+    <div class="pick-counter">
+      <div class="counter-pill" id="counterPill">0 / 10 picks</div>
+      <button class="submit-btn" id="submitBtn" onclick="submitPicks()">Submit Picks</button>
+    </div>
   </div>
 </header>
 <nav class="page-nav">
