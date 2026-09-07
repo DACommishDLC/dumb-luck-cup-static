@@ -1012,6 +1012,38 @@ Cleveland Browns at Cincinnati Bengals (-7.5, 44.5)
       </div>
     </div>
     <div id="submittedPicksList"></div>
+
+    <!-- Divider -->
+    <div style="border-top:1px solid #e0e0e0; margin:36px 0;"></div>
+
+    <!-- Week rollover -->
+    <div style="background:#f0fdf4;border-left:4px solid #00c48c;border-radius:8px;padding:20px;margin-bottom:20px;">
+      <h3 style="margin-bottom:6px;">💾 Save &amp; Clear This Week</h3>
+      <p style="color:#444;font-size:14px;line-height:1.8;margin-bottom:14px;">
+        End-of-week ritual, once this week's games are all scored: archives the
+        currently loaded games and everyone's picks for them under a saved
+        record, then clears just those picks so next week starts at 0/10 for
+        every player. Season standings still count archived weeks — they're
+        read back in from the archive, nothing is lost.
+      </p>
+      <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+        <label style="font-weight:500; font-size:14px;">Label this week:</label>
+        <input type="text" id="archiveWeekLabel" placeholder="e.g. 2026-week1" style="padding:8px 12px; border:1px solid #ddd; border-radius:6px; font-size:14px; width:180px;">
+        <button class="btn btn-primary" onclick="saveAndClearWeek()">💾 Save &amp; Clear This Week</button>
+      </div>
+      <div id="archiveStatus" style="margin-top:10px;font-size:13px;color:#666;"></div>
+    </div>
+
+    <div style="background:#fff5f5;border-left:4px solid #c0392b;border-radius:8px;padding:20px;">
+      <h3 style="margin-bottom:6px;color:#c0392b;">🗑️ Clear All Picks (no archive)</h3>
+      <p style="color:#444;font-size:14px;line-height:1.8;margin-bottom:14px;">
+        Immediately wipes every player's picks with nothing saved first. For
+        clearing out pre-season test picks before Week 1 — not for use once
+        the season is live, since anything here is gone for good. Use
+        "Save &amp; Clear This Week" above for the normal weekly reset instead.
+      </p>
+      <button class="btn btn-secondary" style="color:#c0392b;border-color:#c0392b;" onclick="clearAllPicks()">🗑️ Clear All Picks</button>
+    </div>
   </div>
 
   <!-- Email Results Tab -->
@@ -1725,6 +1757,110 @@ Cleveland Browns at Cincinnati Bengals (-7.5, 44.5)
           </table>
         </div>`;
 
+      renderSubmittedPicks();
+    }
+
+    // ─── Week rollover: archive + clear, or clear outright ─────────────────
+
+    function defaultWeekLabel() {
+      const season = games[0]?.season || new Date().getFullYear();
+      const week = games[0]?.week ?? '?';
+      return `${season}-week${week}`;
+    }
+
+    async function saveAndClearWeek() {
+      const statusEl = document.getElementById('archiveStatus');
+      const labelInput = document.getElementById('archiveWeekLabel');
+      const label = (labelInput.value || defaultWeekLabel()).trim().replace(/[.#$/\[\]]/g, '-');
+
+      if (games.length === 0) {
+        statusEl.textContent = '⚠️ No games currently loaded — nothing to archive.';
+        return;
+      }
+      if (!confirm(`Archive ${games.length} games and everyone's picks for them as "${label}", then clear those picks so next week starts fresh?`)) return;
+
+      statusEl.textContent = '⏳ Archiving...';
+
+      let allPicks = {};
+      try {
+        allPicks = await DLC_DB.loadAllPlayerPicks();
+      } catch (e) {
+        console.error('Failed to load picks for archiving:', e);
+        statusEl.textContent = '❌ Could not load picks — nothing was archived or cleared.';
+        return;
+      }
+
+      const currentIds = new Set(games.map(g => g.id));
+      const archivedPicks = {};
+      const remainingPicksByPlayer = {};
+
+      for (const [player, picks] of Object.entries(allPicks)) {
+        const thisWeek = {};
+        const rest = {};
+        for (const [gameId, pick] of Object.entries(picks || {})) {
+          if (currentIds.has(gameId)) thisWeek[gameId] = pick;
+          else rest[gameId] = pick;
+        }
+        if (Object.keys(thisWeek).length > 0) archivedPicks[player] = thisWeek;
+        remainingPicksByPlayer[player] = rest;
+      }
+
+      const snapshot = {
+        weekLabel: label,
+        archivedAt: new Date().toISOString(),
+        games,
+        picks: archivedPicks
+      };
+
+      try {
+        await DLC_DB.saveWeekArchive(label, snapshot);
+      } catch (e) {
+        console.error('Failed to save archive:', e);
+        statusEl.textContent = '❌ Archiving failed — nothing was cleared, your live picks are untouched.';
+        return;
+      }
+
+      // Only clear picks for players who actually had picks for this
+      // week's games; leave everyone else's data alone.
+      try {
+        await Promise.all(
+          Object.entries(remainingPicksByPlayer)
+            .filter(([player]) => archivedPicks[player])
+            .map(([player, rest]) => DLC_DB.savePlayerPicks(player, rest))
+        );
+      } catch (e) {
+        console.error('Archived successfully, but failed to clear live picks:', e);
+        statusEl.textContent = `⚠️ Archived as "${label}", but clearing the live picks failed — try again or clear manually.`;
+        return;
+      }
+
+      statusEl.textContent = `✅ Archived as "${label}" and cleared picks for ${Object.keys(archivedPicks).length} player(s). Next week starts at 0/10.`;
+      labelInput.value = '';
+      renderSubmittedPicks();
+    }
+
+    async function clearAllPicks() {
+      if (!confirm('This deletes every player\'s picks right now with nothing saved first. Only use this for clearing out pre-season test picks - once the season is live, use "Save & Clear This Week" instead so points aren\'t lost. Continue?')) return;
+      if (!confirm('Really clear all picks? This cannot be undone.')) return;
+
+      let allPicks = {};
+      try {
+        allPicks = await DLC_DB.loadAllPlayerPicks();
+      } catch (e) {
+        console.error('Failed to load picks:', e);
+        showAlert('Could not load picks to clear.', 'error');
+        return;
+      }
+
+      try {
+        await Promise.all(Object.keys(allPicks).map(player => DLC_DB.savePlayerPicks(player, {})));
+      } catch (e) {
+        console.error('Failed to clear picks:', e);
+        showAlert('Failed to clear all picks — some may remain.', 'error');
+        return;
+      }
+
+      showAlert('✅ All picks cleared.', 'success');
       renderSubmittedPicks();
     }
 

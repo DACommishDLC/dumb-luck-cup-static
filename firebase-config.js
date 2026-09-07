@@ -135,6 +135,35 @@ const DLC_DB = {
     }
   },
 
+  // ─── Weekly Archive ────────────────────────────────────────────────────
+  // Standings are computed live by matching picks to games by gameId - there
+  // is no separate running-total table. That means a week's games and picks
+  // can never just be deleted once it's been played, or its points vanish
+  // from the season standings. These archive that week's games + picks as a
+  // self-contained snapshot under history/{weekLabel} before anything live
+  // gets cleared; the leaderboard reads archives back in alongside the live
+  // games/picks when it calculates the season standings.
+
+  async saveWeekArchive(weekLabel, snapshot) {
+    try {
+      await db.ref(`history/${weekLabel}`).set(snapshot);
+      console.log(`✅ Archived ${weekLabel}`);
+    } catch (error) {
+      console.error(`❌ Error archiving ${weekLabel}:`, error);
+      throw error;
+    }
+  },
+
+  async loadAllArchives() {
+    try {
+      const snapshot = await db.ref('history').once('value');
+      return snapshot.val() || {};
+    } catch (error) {
+      console.error('❌ Error loading archives:', error);
+      return {};
+    }
+  },
+
   // ─── Utility ───────────────────────────────────────────────────────────
   
   async clearAllData() {

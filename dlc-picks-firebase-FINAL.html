@@ -1147,7 +1147,7 @@
       }
     }
 
-    const pickCount = Object.keys(picks).length;
+    const pickCount = Object.keys(getCurrentWeekPicks()).length;
     const alreadyPicked = picks[gameId];
 
     // If clicking same pick again → remove it (toggle)
@@ -1181,7 +1181,21 @@
     renderTray();
 
     // Auto open tray when first pick is made
-    if (Object.keys(picks).length === 1) openTray();
+    if (Object.keys(getCurrentWeekPicks()).length === 1) openTray();
+  }
+
+  // Old picks referencing games from a past, already-cleared week can
+  // still be sitting in Firebase (picks accumulate per player and are
+  // never auto-deleted). Scoping every count/render/submit to only
+  // picks that match a currently-loaded game keeps a past week's picks
+  // from silently eating into this week's 10-pick limit.
+  function getCurrentWeekPicks() {
+    const currentIds = new Set(games.map(g => g.id));
+    const result = {};
+    for (const [gameId, pick] of Object.entries(picks)) {
+      if (currentIds.has(gameId)) result[gameId] = pick;
+    }
+    return result;
   }
 
   async function savePicks() {
@@ -1196,7 +1210,7 @@
 
   // ── Counter ──────────────────────────────────────
   function updateCounter() {
-    const count = Object.keys(picks).length;
+    const count = Object.keys(getCurrentWeekPicks()).length;
     const pill  = document.getElementById('counterPill');
     const btn   = document.getElementById('submitBtn');
     const trayCount = document.getElementById('trayCount');
@@ -1223,7 +1237,7 @@
 
   function renderTray() {
     const grid = document.getElementById('trayPicksGrid');
-    const pickEntries = Object.entries(picks);
+    const pickEntries = Object.entries(getCurrentWeekPicks());
 
     if (pickEntries.length === 0) {
       grid.innerHTML = `<div style="color:var(--muted);font-size:13px;padding:8px 0;grid-column:1/-1;">
@@ -1256,12 +1270,13 @@
 
   // ── Submit ───────────────────────────────────────
   function submitPicks() {
-    if (Object.keys(picks).length !== MAX_PICKS) return;
+    const currentPicks = getCurrentWeekPicks();
+    if (Object.keys(currentPicks).length !== MAX_PICKS) return;
 
     const overlay = document.getElementById('submissionOverlay');
     const list    = document.getElementById('submissionPicksList');
 
-    list.innerHTML = Object.entries(picks).map(([gameId, pick]) => {
+    list.innerHTML = Object.entries(currentPicks).map(([gameId, pick]) => {
       const spreadDisplay = pick.side === 'favorite'
         ? `-${Math.abs(pick.spread)}`
         : `+${Math.abs(pick.spread)}`;
