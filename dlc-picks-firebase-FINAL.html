@@ -65,13 +65,24 @@
       margin-bottom: 12px;
     }
 
-    .logo {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 26px;
-      letter-spacing: 1px;
-      color: #000;
+    .logo-block {
       position: relative;
       z-index: 1;
+    }
+
+    .logo {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 28px;
+      letter-spacing: 1.5px;
+      color: #000;
+      line-height: 1.1;
+    }
+
+    .header-subtitle {
+      font-size: 12px;
+      color: rgba(0,0,0,0.65);
+      font-weight: 600;
+      margin-top: 2px;
     }
 
     .player-name {
@@ -685,7 +696,7 @@
 
     .nav-btn {
       background: var(--border);
-      border: none;
+      border: 1px solid transparent;
       color: #ffffff;
       border-radius: 20px;
       padding: 8px 18px;
@@ -695,13 +706,15 @@
       cursor: pointer;
       white-space: nowrap;
       text-decoration: none;
-      transition: all 0.2s;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
       display: inline-block;
     }
 
     .nav-btn:hover {
-      background: var(--muted);
-      color: var(--text);
+      background: rgba(245,197,24,0.12);
+      border-color: rgba(245,197,24,0.4);
+      color: var(--yellow);
+      transform: translateY(-1px);
     }
   </style>
   <!-- Firebase SDK -->
@@ -754,7 +767,10 @@
 <!-- ── Header ─────────────────────────────────────── -->
 <header>
   <div class="header-top">
-    <div class="logo">🏈 Dumb Luck Cup</div>
+    <div class="logo-block">
+      <div class="logo">🏈 DUMB LUCK CUP</div>
+      <div class="header-subtitle" id="headerSubtitle">Week 1 · 2026 Season</div>
+    </div>
     <div class="player-name">Playing as <span id="playerNameDisplay">—</span> <a href="#" onclick="switchPlayer(); return false;" style="color:var(--muted); font-size:11px; text-decoration:underline; margin-left:4px;">(switch)</a></div>
   </div>
   <div class="pick-counter">
