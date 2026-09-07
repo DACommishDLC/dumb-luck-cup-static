@@ -1389,9 +1389,9 @@
 
     grid.innerHTML = pickEntries.map(([gameId, pick]) => {
       const game = games.find(g => g.id === gameId);
-      const spreadDisplay = pick.side === 'favorite'
-        ? `-${Math.abs(pick.spread)}`
-        : `+${Math.abs(pick.spread)}`;
+      const spreadDisplay = Number.isNaN(pick.spread)
+        ? 'No spread yet'
+        : (pick.side === 'favorite' ? `-${Math.abs(pick.spread)}` : `+${Math.abs(pick.spread)}`);
       return `
         <div class="tray-pick">
           <div class="tray-pick-team">${pick.team}</div>
@@ -1418,9 +1418,9 @@
     const list    = document.getElementById('submissionPicksList');
 
     list.innerHTML = Object.entries(currentPicks).map(([gameId, pick]) => {
-      const spreadDisplay = pick.side === 'favorite'
-        ? `-${Math.abs(pick.spread)}`
-        : `+${Math.abs(pick.spread)}`;
+      const spreadDisplay = Number.isNaN(pick.spread)
+        ? 'No spread yet'
+        : (pick.side === 'favorite' ? `-${Math.abs(pick.spread)}` : `+${Math.abs(pick.spread)}`);
       return `
         <div class="sub-pick-item">
           <div class="sub-pick-team">${pick.team}</div>
