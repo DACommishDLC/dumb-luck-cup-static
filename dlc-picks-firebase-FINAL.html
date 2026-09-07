@@ -752,6 +752,7 @@
   <button class="filter-btn nfl-filter" data-filter="NFL" onclick="setFilter(this, 'NFL')">🏈 NFL</button>
   <div class="filter-divider"></div>
   <button class="filter-btn fbs-filter" data-filter="FBS" onclick="setFilter(this, 'FBS')">🎓 FBS</button>
+  <button class="filter-btn conf-filter" data-filter="top25" onclick="setFilter(this, 'top25')">🏆 Top 25</button>
   <span id="confChipsAnchor"></span>
   <div class="filter-divider"></div>
   <button class="filter-btn" data-filter="my-picks" onclick="setFilter(this, 'my-picks')">⭐ My Picks</button>
@@ -963,9 +964,10 @@
   function getFilteredGames() {
     const search = document.getElementById('searchInput').value.toLowerCase().trim();
 
-    return games.filter(g => {
+    const filtered = games.filter(g => {
       if (currentFilter === 'NFL' && g.league !== 'NFL') return false;
       if (currentFilter === 'FBS' && g.league !== 'FBS') return false;
+      if (currentFilter === 'top25' && !g.homeRank && !g.awayRank) return false;
       if (currentFilter.startsWith('conf:')) {
         // FBS-only: several school names are prefixes of NFL team names
         // (e.g. "Washington" / Washington Commanders, "Indiana" /
@@ -991,6 +993,16 @@
       }
       return true;
     });
+
+    // Top 25 reads top-to-bottom by rank (#1 first, #25 last) rather than
+    // by kickoff time. A game with two ranked teams sorts by whichever
+    // team is ranked higher (lower number).
+    if (currentFilter === 'top25') {
+      const bestRank = g => Math.min(g.homeRank || 99, g.awayRank || 99);
+      filtered.sort((a, b) => bestRank(a) - bestRank(b));
+    }
+
+    return filtered;
   }
 
   // ── Render ───────────────────────────────────────
