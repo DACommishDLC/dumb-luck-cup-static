@@ -204,6 +204,7 @@
     .search-wrap {
       padding: 12px 20px;
       background: var(--dark);
+      position: relative;
     }
 
     .search-input {
@@ -211,7 +212,7 @@
       background: var(--card);
       border: 1px solid var(--border);
       border-radius: 10px;
-      padding: 10px 14px 10px 38px;
+      padding: 10px 38px 10px 38px;
       color: var(--text);
       font-family: 'DM Sans', sans-serif;
       font-size: 14px;
@@ -222,10 +223,6 @@
     .search-input:focus { border-color: var(--yellow); }
     .search-input::placeholder { color: var(--muted); }
 
-    .search-wrap {
-      position: relative;
-    }
-
     .search-icon {
       position: absolute;
       left: 34px;
@@ -234,6 +231,34 @@
       color: var(--muted);
       font-size: 16px;
       pointer-events: none;
+    }
+
+    .search-clear {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      position: absolute;
+      right: 28px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 22px;
+      height: 22px;
+      background: var(--border);
+      color: var(--muted);
+      border: none;
+      border-radius: 50%;
+      font-size: 12px;
+      line-height: 1;
+      cursor: pointer;
+      padding: 0;
+      transition: all 0.15s;
+    }
+
+    .search-clear.visible { display: flex; }
+
+    .search-clear:hover {
+      background: var(--red);
+      color: #fff;
     }
 
     /* ── Day group header ────────────────────────── */
