@@ -110,3 +110,29 @@ tell apart the two ways this can go wrong:
   manually-adjusted spreads get handled.
 - **Player authentication** and the **historical stats dashboard** are
   separate priorities from the handoff notes, untouched here.
+
+## Yahoo auto-fetch (the fallback path)
+
+`api/yahoo-scoreboard.js` + the "🔄 Fetch from Yahoo" button (Load New Week
+tab) do the same job for the Yahoo fallback that ESPN's auto-load does for
+the primary path — but Yahoo has no public API, so this works completely
+differently under the hood: the serverless function fetches the Yahoo
+betting page's raw HTML, strips it down to plain text, and feeds that
+through the *same* `parseYahooSpreads()` parser the manual paste box always
+used. It's automating the copy step, not adding a real integration.
+
+This makes it meaningfully more fragile than the ESPN path:
+- No JSON contract — any redesign of Yahoo's page markup can silently
+  break the text extraction or feed the parser garbage.
+- Not verified against Yahoo's live page (same "no network access to test
+  from this environment" caveat as the original ESPN work, but with a much
+  flimsier fallback if it's wrong — HTML scraping has no schema to fail
+  loudly against).
+- The parser's line-filtering (only keeps lines shaped like
+  `Team at Team (-N, N)`) does most of the work of ignoring nav/footer/ad
+  noise from the full-page text dump, which is what makes this workable at
+  all rather than a bad idea outright.
+
+**Always check the preview table before importing**, same as manual paste —
+that safety net is exactly why this was built as "auto-fill the paste box"
+rather than a separate no-preview import path.

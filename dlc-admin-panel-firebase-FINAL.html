@@ -814,11 +814,22 @@
         <div id="espnPreview" style="margin-top:20px;"></div>
       </div>
 
-      <!-- STEP 1: Paste from Yahoo (fallback) -->
+      <!-- STEP 1: Yahoo Sports (fallback) -->
       <div style="background:#f0f4ff; border-left:4px solid #667eea; border-radius:8px; padding:20px; margin-bottom:28px;">
-        <h3 style="margin-bottom:6px;">📋 Or paste from Yahoo Sports (fallback)</h3>
+        <h3 style="margin-bottom:6px;">📋 Yahoo Sports (fallback)</h3>
+        <p style="color:#444; font-size:14px; line-height:1.8; margin-bottom:14px;">
+          Yahoo has no public API like ESPN, so "Fetch from Yahoo" works by pulling the
+          betting page's text server-side and running it through the same parser as pasting
+          by hand — it's a shortcut for the copy step, not a real API, and is more likely to
+          need a manual paste if Yahoo changes their page. Always check the preview below
+          before importing either way.
+        </p>
+        <div style="display:flex; gap:12px; align-items:center; margin-bottom:14px;">
+          <button class="btn btn-primary" onclick="fetchFromYahoo()">🔄 Fetch from Yahoo</button>
+          <span id="yahooFetchStatus" style="font-size:13px; color:#666;"></span>
+        </div>
         <ol style="color:#444; font-size:14px; line-height:2; margin-left:18px;">
-          <li>Go to <strong>sports.yahoo.com/nfl/betting</strong> (or college-football)</li>
+          <li>Or go to <strong>sports.yahoo.com/nfl/betting</strong> (or college-football)</li>
           <li>Find the weekly spreads article (e.g. "Full list of Week 8 spreads")</li>
           <li>Select all the game lines and copy them</li>
           <li>Paste below — the parser does the rest</li>
@@ -2336,6 +2347,30 @@ Cleveland Browns at Cincinnati Bengals (-7.5, 44.5)
     }
 
     // ─── Yahoo Sports Paste Parser ────────────────────────────────────────────
+
+    async function fetchFromYahoo() {
+      const statusEl = document.getElementById('yahooFetchStatus');
+      const leagueSelect = document.getElementById('pasteLeague').value; // 'NFL' or 'FBS'
+      const league = leagueSelect === 'FBS' ? 'fbs' : 'nfl';
+
+      statusEl.textContent = '⏳ Fetching from Yahoo...';
+      try {
+        const res = await fetch(`/api/yahoo-scoreboard?league=${league}`);
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || `Yahoo fetch failed (${res.status})`);
+
+        document.getElementById('yahoopasteArea').value = data.text;
+        previewParsedGames();
+
+        const parsed = parseYahooSpreads(data.text);
+        statusEl.textContent = parsed.length > 0
+          ? `✅ Pulled the page — ${parsed.length} game${parsed.length !== 1 ? 's' : ''} found. Check the preview below before importing.`
+          : `⚠️ Pulled the page but found 0 games — Yahoo's markup may have changed. Falling back to manual copy/paste is your best bet right now.`;
+      } catch (e) {
+        console.error('Yahoo fetch failed:', e);
+        statusEl.textContent = `❌ ${e.message}. Use the manual copy/paste steps below instead.`;
+      }
+    }
 
     function parseYahooSpreads(text) {
       const games = [];
