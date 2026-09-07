@@ -48,6 +48,12 @@
       right: -30px;
       transform: rotate(15deg);
       pointer-events: none;
+      animation: headerTrophyFloat 5s ease-in-out infinite;
+    }
+
+    @keyframes headerTrophyFloat {
+      0%, 100% { transform: rotate(15deg) translateY(0); }
+      50%      { transform: rotate(8deg) translateY(-8px); }
     }
 
     .trophy-icon {
@@ -56,6 +62,13 @@
       filter: drop-shadow(0 4px 20px rgba(245,197,24,0.4));
       position: relative;
       z-index: 1;
+      display: inline-block;
+      animation: leaderboardTrophyPulse 2.8s ease-in-out infinite;
+    }
+
+    @keyframes leaderboardTrophyPulse {
+      0%, 100% { transform: scale(1); }
+      50%      { transform: scale(1.08); }
     }
 
     h1 {
@@ -95,6 +108,11 @@
       background: var(--card);
       padding: 14px 12px;
       text-align: center;
+      transition: background 0.2s;
+    }
+
+    .stat-box:hover {
+      background: rgba(245,197,24,0.06);
     }
 
     .stat-value {
@@ -129,7 +147,10 @@
 
     .podium-place {
       text-align: center;
+      transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     }
+
+    .podium-place:hover { transform: translateY(-4px); }
 
     .podium-place.second { grid-column: 1; }
     .podium-place.first  { grid-column: 2; }
@@ -142,8 +163,16 @@
       filter: drop-shadow(0 2px 8px rgba(0,0,0,0.3));
     }
 
-    .podium-place.first .podium-medal   { font-size: 64px; }
+    .podium-place.first .podium-medal   {
+      font-size: 64px;
+      animation: firstPlaceFloat 3s ease-in-out infinite;
+    }
     .podium-place.second .podium-medal  { font-size: 52px; }
+
+    @keyframes firstPlaceFloat {
+      0%, 100% { transform: translateY(0); filter: drop-shadow(0 2px 8px rgba(0,0,0,0.3)); }
+      50%      { transform: translateY(-6px); filter: drop-shadow(0 6px 18px rgba(245,197,24,0.5)); }
+    }
 
     .podium-name {
       font-size: 16px;
@@ -159,7 +188,10 @@
       color: var(--gold);
     }
 
-    .podium-place.first .podium-points { font-size: 36px; }
+    .podium-place.first .podium-points {
+      font-size: 36px;
+      text-shadow: 0 0 20px rgba(245,197,24,0.5);
+    }
 
     .podium-label {
       font-size: 10px;
@@ -245,10 +277,17 @@
       padding: 12px 8px;
       border-bottom: 1px solid var(--border);
       font-size: 14px;
+      transition: background 0.15s;
+    }
+
+    .standings-table tbody tr {
+      transition: background 0.15s;
+      border-left: 2px solid transparent;
     }
 
     .standings-table tbody tr:hover {
-      background: rgba(255,255,255,0.02);
+      background: rgba(245,197,24,0.05);
+      border-left-color: var(--gold);
     }
 
     .rank-cell {
@@ -256,9 +295,10 @@
       font-weight: 700;
       font-size: 18px;
       color: var(--muted);
+      transition: text-shadow 0.15s;
     }
 
-    .rank-cell.rank-1 { color: var(--gold);   font-size: 24px; }
+    .rank-cell.rank-1 { color: var(--gold);   font-size: 24px; text-shadow: 0 0 12px rgba(245,197,24,0.4); }
     .rank-cell.rank-2 { color: var(--silver); font-size: 22px; }
     .rank-cell.rank-3 { color: var(--bronze); font-size: 20px; }
 
@@ -362,7 +402,7 @@
 
     .nav-btn {
       background: var(--border);
-      border: none;
+      border: 1px solid transparent;
       color: var(--muted);
       border-radius: 20px;
       padding: 8px 18px;
@@ -372,13 +412,15 @@
       cursor: pointer;
       white-space: nowrap;
       text-decoration: none;
-      transition: all 0.2s;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
       display: inline-block;
     }
 
     .nav-btn:hover {
-      background: var(--muted);
-      color: var(--text);
+      background: rgba(245,197,24,0.12);
+      border-color: rgba(245,197,24,0.4);
+      color: var(--gold);
+      transform: translateY(-1px);
     }
   </style>
   <!-- Firebase SDK -->

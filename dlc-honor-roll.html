@@ -54,6 +54,13 @@
       filter: drop-shadow(0 4px 20px rgba(0,0,0,0.3));
       position: relative;
       z-index: 1;
+      display: inline-block;
+      animation: trophyBannerFloat 3.5s ease-in-out infinite;
+    }
+
+    @keyframes trophyBannerFloat {
+      0%, 100% { transform: translateY(0) rotate(0deg); }
+      50%      { transform: translateY(-6px) rotate(3deg); }
     }
 
     h1 {
@@ -89,7 +96,7 @@
 
     .nav-btn {
       background: var(--border);
-      border: none;
+      border: 1px solid transparent;
       color: #9ca3af;
       border-radius: 20px;
       padding: 8px 18px;
@@ -99,12 +106,14 @@
       cursor: pointer;
       white-space: nowrap;
       text-decoration: none;
-      transition: all 0.2s;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     .nav-btn:hover {
-      background: var(--muted);
-      color: var(--text);
+      background: rgba(245,197,24,0.12);
+      border-color: rgba(245,197,24,0.4);
+      color: var(--gold);
+      transform: translateY(-1px);
     }
 
     /* ── Content sections ───────────────────────── */
@@ -150,7 +159,8 @@
       border-radius: 12px;
       padding: 20px;
       text-align: center;
-      transition: all 0.2s;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
       position: relative;
       overflow: hidden;
     }
@@ -158,7 +168,17 @@
     .champion-card:hover {
       transform: translateY(-4px);
       border-color: var(--gold);
-      box-shadow: 0 8px 24px rgba(245,197,24,0.2);
+      box-shadow: 0 12px 30px rgba(245,197,24,0.22);
+    }
+
+    .champion-card:hover .champion-trophy,
+    .champion-card:hover .champion-avatar {
+      transform: scale(1.12) rotate(-4deg);
+    }
+
+    .champion-trophy, .champion-avatar {
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      display: inline-block;
     }
 
     .champion-year {
@@ -187,6 +207,21 @@
       border-color: var(--accent);
     }
 
+    .champion-card.multiple::after {
+      content: '';
+      position: absolute;
+      top: 0; left: -60%;
+      width: 40%; height: 100%;
+      background: linear-gradient(100deg, transparent, rgba(245,197,24,0.15), transparent);
+      animation: championShine 6s ease-in-out infinite;
+    }
+
+    @keyframes championShine {
+      0%   { left: -60%; }
+      45%  { left: 130%; }
+      100% { left: 130%; }
+    }
+
     .champion-name.split {
       font-size: 15px;
       line-height: 1.4;
@@ -198,6 +233,7 @@
       border: 1px solid var(--border);
       border-radius: 12px;
       overflow: hidden;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.15);
     }
 
     .record-item {
@@ -249,6 +285,14 @@
       border-radius: 12px;
       padding: 24px;
       text-align: center;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .stat-box:hover {
+      transform: translateY(-3px);
+      border-color: rgba(245,197,24,0.4);
+      box-shadow: 0 10px 26px rgba(245,197,24,0.15);
     }
 
     .stat-value {
@@ -278,6 +322,13 @@
       border-radius: 8px;
       padding: 16px;
       text-align: center;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .legend-item:hover {
+      transform: translateY(-3px);
+      border-color: rgba(245,197,24,0.4);
+      box-shadow: 0 8px 20px rgba(245,197,24,0.12);
     }
 
     .legend-count {
