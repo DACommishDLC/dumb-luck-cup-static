@@ -1,0 +1,5 @@
+{
+  "rewrites": [
+    { "source": "/", "destination": "/dlc-picks-firebase-FINAL.html" }
+  ]
+}
