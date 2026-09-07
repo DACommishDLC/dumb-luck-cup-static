@@ -1686,14 +1686,16 @@ Cleveland Browns at Cincinnati Bengals (-7.5, 44.5)
       icon.classList.add('coin-flipping');
 
       const now = new Date();
-      const eligible = games.filter(g =>
-        g.league === 'NFL' &&
+      const nflGames = games.filter(g => g.league === 'NFL');
+      const eligible = nflGames.filter(g =>
         g.status !== 'live' && g.status !== 'final' &&
         new Date(g.gameTime) > now
       );
 
       if (eligible.length === 0) {
-        statusEl.textContent = '⚠️ No upcoming NFL games loaded to flip picks for.';
+        statusEl.textContent = nflGames.length === 0
+          ? '⚠️ No NFL games loaded at all - load this week\'s games first.'
+          : `⚠️ ${nflGames.length} NFL game(s) loaded, but none are upcoming (already live/final, or their kickoff time has passed - old games from a previous week still loaded?). Clear old games and load the current week first.`;
         return;
       }
 
@@ -2418,6 +2420,55 @@ Cleveland Browns at Cincinnati Bengals (-7.5, 44.5)
         </div>`;
     }
 
+    // Yahoo's paste format gives a date without a year ("Saturday, Jan. 3")
+    // and a time that isn't always a clock time ("Sunday Night Football").
+    // Best-effort parse into a real future kickoff time - this used to just
+    // stamp the import moment as gameTime, which made every imported game
+    // look already-started within seconds (breaking both pick-locking and
+    // Coin's "only pick upcoming games" filter).
+    function parseYahooGameTime(dayStr, timeStr) {
+      const MONTHS = { jan:0, feb:1, mar:2, apr:3, may:4, jun:5, jul:6, aug:7, sep:8, oct:9, nov:10, dec:11 };
+      const now = new Date();
+      let month = null, day = null;
+
+      if (dayStr) {
+        const m = dayStr.match(/([A-Za-z]{3})[a-z]*\.?\s+(\d{1,2})/);
+        if (m && MONTHS[m[1].toLowerCase()] !== undefined) {
+          month = MONTHS[m[1].toLowerCase()];
+          day = parseInt(m[2], 10);
+        }
+      }
+
+      let hour = 13, minute = 0; // default 1:00 PM if no parseable clock time
+      if (timeStr) {
+        const t = timeStr.match(/(\d{1,2})(?::(\d{2}))?\s*(a\.m\.|p\.m\.)/i);
+        if (t) {
+          hour = parseInt(t[1], 10) % 12;
+          minute = t[2] ? parseInt(t[2], 10) : 0;
+          if (/p\.m\./i.test(t[3])) hour += 12;
+        }
+      }
+
+      if (month === null) {
+        // Couldn't parse a date at all - default to the coming Sunday
+        // rather than "right now", so the game is at least still pickable.
+        const d = new Date(now);
+        d.setDate(d.getDate() + ((7 - d.getDay()) % 7 || 7));
+        d.setHours(hour, minute, 0, 0);
+        return d.toISOString();
+      }
+
+      let year = now.getFullYear();
+      let candidate = new Date(year, month, day, hour, minute, 0, 0);
+      // A date more than a week in the past is probably next year's
+      // occurrence (e.g. parsing a January bowl game while importing in
+      // the fall), not this year's already-passed one.
+      if (candidate < now && (now - candidate) > 7 * 24 * 60 * 60 * 1000) {
+        candidate = new Date(year + 1, month, day, hour, minute, 0, 0);
+      }
+      return candidate.toISOString();
+    }
+
     function importParsedGames() {
       const text   = document.getElementById('yahoopasteArea').value;
       const league = document.getElementById('pasteLeague').value;
@@ -2432,13 +2483,13 @@ Cleveland Browns at Cincinnati Bengals (-7.5, 44.5)
       const newGames = parsed.map((g, i) => ({
         id: `game-${Date.now()}-${i}`,
         week,
-        season: 2025,
+        season: new Date().getFullYear(),
         league,
         homeTeam:          g.homeTeam,
         homeAbbr:          g.homeTeam.split(' ').slice(-1)[0].substring(0, 3).toUpperCase(),
         awayTeam:          g.awayTeam,
         awayAbbr:          g.awayTeam.split(' ').slice(-1)[0].substring(0, 3).toUpperCase(),
-        gameTime:          new Date().toISOString(),
+        gameTime:          parseYahooGameTime(g.day, g.time),
         currentSpread:     g.spread,
         spreadLastUpdated: new Date().toISOString(),
         finalSpread:       null,
