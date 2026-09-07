@@ -50,11 +50,15 @@
 
     .trophy-banner {
       font-size: 64px;
+      height: 64px;
+      line-height: 64px;
       margin-bottom: 12px;
       filter: drop-shadow(0 4px 20px rgba(0,0,0,0.3));
       position: relative;
       z-index: 1;
-      display: inline-block;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       animation: trophyBannerFloat 3.5s ease-in-out infinite;
     }
 
@@ -66,6 +70,7 @@
     h1 {
       font-family: 'Bebas Neue', sans-serif;
       font-size: 48px;
+      line-height: 1;
       letter-spacing: 2px;
       color: #000;
       margin-bottom: 8px;
@@ -75,6 +80,7 @@
 
     .subtitle {
       font-size: 16px;
+      line-height: 1.2;
       color: rgba(0,0,0,0.7);
       font-weight: 600;
       position: relative;
