@@ -676,7 +676,7 @@
 <header>
   <div class="header-top">
     <div class="logo">🏈 Dumb Luck Cup</div>
-    <div class="player-name">Playing as <span id="playerNameDisplay">—</span></div>
+    <div class="player-name">Playing as <span id="playerNameDisplay">—</span> <a href="#" onclick="switchPlayer(); return false;" style="color:var(--muted); font-size:11px; text-decoration:underline; margin-left:4px;">(switch)</a></div>
   </div>
   <div class="pick-counter">
     <div class="counter-pill" id="counterPill">0 / 10 picks</div>
@@ -767,7 +767,7 @@
       <a href="/dlc-rules.html" style="font-size:13px; color:#e8eaf0; text-decoration:none; padding:8px 12px; background:rgba(102,126,234,0.2); border:1px solid rgba(102,126,234,0.4); border-radius:8px; font-weight:600;">📖 Rules</a>
     </div>
     <p style="color:var(--muted); font-size:14px; margin-bottom:28px; line-height:1.5;">
-      Week 8 · 2025 Season<br>Pick 10 games. Beat the spread. Be the goat.
+      Week 1 · 2026 Season<br>Pick 10 games. Beat the spread. Be the goat.
     </p>
     <select id="playerSelect" style="
       width:100%; background:var(--border); border:1px solid var(--border);
@@ -810,8 +810,27 @@
   // ── Boot ─────────────────────────────────────────
   document.addEventListener('DOMContentLoaded', async () => {
     renderConferenceChips();
+
+    // Resume the last-picked player on this device instead of asking
+    // again on every page load (e.g. going to the leaderboard and back).
+    const savedPlayer = localStorage.getItem('dlc_current_player');
+    if (savedPlayer) {
+      currentPlayer = savedPlayer;
+      document.getElementById('playerNameDisplay').innerHTML = getAvatar(savedPlayer, 24) + savedPlayer;
+      document.getElementById('nameModal').style.display = 'none';
+    }
+
     loadGames();
   });
+
+  function switchPlayer() {
+    localStorage.removeItem('dlc_current_player');
+    currentPlayer = '';
+    picks = {};
+    document.getElementById('playerNameDisplay').textContent = '—';
+    document.getElementById('playerSelect').value = '';
+    document.getElementById('nameModal').style.display = 'flex';
+  }
 
   function renderConferenceChips() {
     const anchor = document.getElementById('confChipsAnchor');
@@ -861,6 +880,7 @@
     const sel = document.getElementById('playerSelect').value;
     if (!sel) { alert('Please select your name first!'); return; }
     currentPlayer = sel;
+    localStorage.setItem('dlc_current_player', sel);
     document.getElementById('playerNameDisplay').innerHTML = getAvatar(sel, 24) + sel;
 
     // Load existing picks
@@ -1326,24 +1346,11 @@
   }
 
   function getFallbackGames() {
-    // Small set of sample games if nothing is in localStorage
-    return [
-      { id:'f1', week:8, season:2025, league:'NFL', homeTeam:'Kansas City Chiefs', homeAbbr:'KC',
-        awayTeam:'Las Vegas Raiders', awayAbbr:'LV', gameTime:'2025-10-26T17:00:00Z',
-        currentSpread:-9.5, spreadLastUpdated:new Date().toISOString(), finalSpread:null, status:'scheduled' },
-      { id:'f2', week:8, season:2025, league:'NFL', homeTeam:'Buffalo Bills', homeAbbr:'BUF',
-        awayTeam:'Miami Dolphins', awayAbbr:'MIA', gameTime:'2025-10-26T17:00:00Z',
-        currentSpread:-6.5, spreadLastUpdated:new Date().toISOString(), finalSpread:null, status:'scheduled' },
-      { id:'f3', week:8, season:2025, league:'NFL', homeTeam:'Philadelphia Eagles', homeAbbr:'PHI',
-        awayTeam:'Dallas Cowboys', awayAbbr:'DAL', gameTime:'2025-10-26T17:00:00Z',
-        currentSpread:-3.5, spreadLastUpdated:new Date().toISOString(), finalSpread:null, status:'scheduled' },
-      { id:'f4', week:8, season:2025, league:'FBS', homeTeam:'Georgia Bulldogs', homeAbbr:'UGA',
-        awayTeam:'Texas Longhorns', awayAbbr:'TEX', gameTime:'2025-10-25T19:30:00Z',
-        currentSpread:-3.5, spreadLastUpdated:new Date().toISOString(), finalSpread:null, status:'scheduled' },
-      { id:'f5', week:8, season:2025, league:'FBS', homeTeam:'Ohio State Buckeyes', homeAbbr:'OSU',
-        awayTeam:'Penn State Nittany Lions', awayAbbr:'PSU', gameTime:'2025-10-25T19:30:00Z',
-        currentSpread:-6, spreadLastUpdated:new Date().toISOString(), finalSpread:null, status:'scheduled' },
-    ];
+    // Intentionally empty. Used only if both Firebase and localStorage
+    // come back empty - showing nothing is correct there; showing five
+    // fictional games from last October (as this used to) is a trap that
+    // would have real players submitting picks against them.
+    return [];
   }
 
   // ── Player Avatars ─────────────────────────────────────────────────────

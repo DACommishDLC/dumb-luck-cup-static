@@ -573,6 +573,12 @@
       font-size: 13px;
       color: rgba(255,255,255,0.6);
     }
+
+    @keyframes coinFlipSpin {
+      0%   { transform: rotateY(0deg); }
+      100% { transform: rotateY(1080deg); }
+    }
+    .coin-flipping { display: inline-block; animation: coinFlipSpin 0.9s ease-out; }
   </style>
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -630,6 +636,8 @@
       <button class="tab" data-tab="spreads">Update Spreads</button>
       <button class="tab" data-tab="load">Load New Week</button>
       <button class="tab" data-tab="scores">🏆 Enter Scores</button>
+      <button class="tab" data-tab="picks">📬 Submitted Picks</button>
+      <button class="tab" data-tab="email">📧 Email</button>
     </div>
     
     <!-- Overview Tab -->
@@ -712,8 +720,9 @@
         </div>
         
         <button class="btn btn-primary" onclick="openAddGameModal()">+ Add Game</button>
+        <button class="btn btn-secondary" style="color:#c0392b;border-color:#c0392b;" onclick="clearAllGames()">🗑️ Clear All Games</button>
       </div>
-      
+
       <div style="max-height: 600px; overflow-y: auto;">
         <table class="games-table">
           <thead>
@@ -866,8 +875,7 @@ Cleveland Browns at Cincinnati Bengals (-7.5, 44.5)
       <p style="color:#666; font-size:13px; margin-bottom:14px;">101 sample games for Week 8 with realistic spreads — useful for testing.</p>
       <button class="btn btn-secondary" onclick="loadWeek8TestData()">Load Week 8 Test Data (101 games)</button>
     </div>
-  </div>
-  
+
   <!-- Scores Tab -->
   <div class="tab-content" data-content="scores">
 
@@ -970,7 +978,100 @@ Cleveland Browns at Cincinnati Bengals (-7.5, 44.5)
       </form>
     </div>
   </div>
-  
+
+  <!-- Submitted Picks Tab -->
+  <div class="tab-content" data-content="picks">
+
+    <!-- Coin: the baseline player -->
+    <div style="background:#fff8e1;border-left:4px solid #f5c518;border-radius:8px;padding:20px;margin-bottom:24px;">
+      <h3 style="margin-bottom:6px;">🪙 Coin's Picks</h3>
+      <p style="color:#444;font-size:14px;line-height:1.8;margin-bottom:14px;">
+        Coin is the league's baseline: 10 random NFL games, each decided by a coin
+        flip — heads picks the home team, tails picks the away team. Flip once
+        games are loaded for the week. Flipping again adds more games to Coin's
+        picks rather than replacing what's already there, same as if a player
+        made more picks by hand.
+      </p>
+      <button class="btn btn-primary" onclick="flipCoinPicks()">
+        <span id="coinFlipIcon">🪙</span> Flip Coin's Picks for This Week
+      </button>
+      <div id="coinFlipStatus" style="margin-top:10px;font-size:13px;color:#666;"></div>
+      <div id="coinFlipResult" style="margin-top:14px;"></div>
+    </div>
+
+    <div style="background:#f0f4ff;border-left:4px solid #667eea;border-radius:8px;padding:20px;margin-bottom:24px;">
+      <h3 style="margin-bottom:6px;">📬 Who's picked so far</h3>
+      <p style="color:#444;font-size:14px;line-height:1.8;">
+        Every player's submitted picks for the games currently loaded. Refreshes automatically when you open this tab.
+      </p>
+    </div>
+    <div class="controls" style="margin-bottom:16px;">
+      <button class="btn btn-primary" onclick="renderSubmittedPicks()">🔄 Refresh</button>
+      <div style="margin-left:auto;font-size:13px;color:#666;">
+        <span id="submittedCount">0</span> of <span id="rosterCount">0</span> players have submitted picks
+      </div>
+    </div>
+    <div id="submittedPicksList"></div>
+  </div>
+
+  <!-- Email Results Tab -->
+  <div class="tab-content" data-content="email">
+    <div class="panel-header" style="margin-bottom:20px;">
+      <h2>📧 Email Week Results</h2>
+      <p style="color:#666;font-size:14px;">Generate and send weekly results to all players</p>
+    </div>
+
+    <div style="margin-bottom:20px;">
+      <label style="display:block; margin-bottom:8px; font-weight:600;">Email Recipients:</label>
+      <div style="display:flex; gap:10px; align-items:flex-start;">
+        <input type="text" id="emailRecipients"
+               placeholder="player1@email.com, player2@email.com, ..."
+               style="flex:1; padding:10px; border:1px solid #ddd; border-radius:6px; font-size:14px;">
+        <button onclick="fillAllEmails()"
+                style="background:#667eea; color:white; border:none; padding:10px 20px; border-radius:6px; font-size:14px; font-weight:600; cursor:pointer; white-space:nowrap;">
+          📋 Fill All Players
+        </button>
+      </div>
+      <p style="font-size:12px; color:#666; margin-top:6px;">Click "Fill All Players" to auto-fill all email addresses</p>
+    </div>
+
+    <div style="margin-bottom:20px;">
+      <label style="display:block; margin-bottom:8px; font-weight:600;">Week Number:</label>
+      <input type="number" id="emailWeek" value="8" min="1" max="18"
+             style="width:150px; padding:10px; border:1px solid #ddd; border-radius:6px; font-size:14px;">
+    </div>
+
+    <button onclick="generateWeeklyEmail()"
+            style="background:#667eea; color:white; border:none; padding:12px 24px; border-radius:8px; font-size:15px; font-weight:600; cursor:pointer;">
+      📧 Generate Email
+    </button>
+
+    <div id="emailPreview" style="margin-top:30px; padding:20px; background:#f9f9f9; border-radius:8px; display:none;">
+      <h3 style="margin-bottom:15px;">Email Preview:</h3>
+      <div id="emailContent" style="background:white; padding:20px; border-radius:6px; font-family:Arial,sans-serif; line-height:1.6;">
+      </div>
+      <div style="margin-top:20px; display:flex; gap:12px;">
+        <button onclick="copyEmailHTML()"
+                style="background:#00c48c; color:white; border:none; padding:12px 24px; border-radius:8px; font-size:15px; font-weight:600; cursor:pointer;">
+          📋 Copy HTML Email
+        </button>
+        <button onclick="copyPlainText()"
+                style="background:#667eea; color:white; border:none; padding:12px 24px; border-radius:8px; font-size:15px; font-weight:600; cursor:pointer;">
+          📝 Copy Plain Text
+        </button>
+      </div>
+      <p style="font-size:13px; color:#666; margin-top:12px;">
+        Click "Copy HTML Email" then paste into Gmail/Outlook compose window for beautiful formatting
+      </p>
+    </div>
+  </div>
+
+  </div><!-- /#mainContainer - the Scores tab and the Add/Edit Game modal used
+             to close the container early and sit as body-level siblings after
+             it (unstyled, and not covered by the admin access gate). Moved
+             here, alongside the new Picks/Email tabs, so everything nests
+             inside the container correctly. -->
+
   <script>
     // In-memory database (will be replaced with Firebase/Supabase)
     let games = [];
@@ -1058,6 +1159,7 @@ Cleveland Browns at Cincinnati Bengals (-7.5, 44.5)
           document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
           document.querySelector(`[data-content="${tabName}"]`).classList.add('active');
           if (tabName === 'scores') renderScoresTab();
+          if (tabName === 'picks') renderSubmittedPicks();
         });
       });
     }
@@ -1143,7 +1245,21 @@ Cleveland Browns at Cincinnati Bengals (-7.5, 44.5)
         }
       }
     }
-    
+
+    async function clearAllGames() {
+      if (!confirm(`This deletes all ${games.length} games currently loaded (from any past testing or old weeks). Picks and player data are NOT touched. Continue?`)) return;
+      if (!confirm('Really clear all games? This cannot be undone.')) return;
+
+      games = [];
+      await saveGames();
+      localStorage.removeItem('dlc_games');
+      updateStats();
+      renderGamesTable();
+      renderSpreadsTable();
+      renderUpcomingGames();
+      showAlert('✅ All games cleared. Load Week 1 fresh from the "Load New Week" tab.', 'success');
+    }
+
     function updateStats() {
       const nfl = games.filter(g => g.league === 'NFL').length;
       const fbs = games.filter(g => g.league === 'FBS').length;
@@ -1526,13 +1642,153 @@ Cleveland Browns at Cincinnati Bengals (-7.5, 44.5)
 
     // ─── Scoring Engine ──────────────────────────────────────────────────────
 
+    // ─── Submitted Picks ────────────────────────────────────────────────────
+
+    // ─── Coin (baseline auto-picker) ────────────────────────────────────────
+
+    async function flipCoinPicks() {
+      const statusEl = document.getElementById('coinFlipStatus');
+      const icon = document.getElementById('coinFlipIcon');
+      icon.classList.remove('coin-flipping');
+      void icon.offsetWidth; // restart the animation if clicked again
+      icon.classList.add('coin-flipping');
+
+      const now = new Date();
+      const eligible = games.filter(g =>
+        g.league === 'NFL' &&
+        g.status !== 'live' && g.status !== 'final' &&
+        new Date(g.gameTime) > now
+      );
+
+      if (eligible.length === 0) {
+        statusEl.textContent = '⚠️ No upcoming NFL games loaded to flip picks for.';
+        return;
+      }
+
+      // Pick up to 10 distinct random NFL games from this week's slate.
+      const shuffled = [...eligible].sort(() => Math.random() - 0.5);
+      const chosen = shuffled.slice(0, Math.min(10, shuffled.length));
+
+      // Load Coin's existing picks first and merge in — same as a human
+      // player, whose picks accumulate across weeks rather than getting
+      // wiped each time they pick more games.
+      let existingPicks = {};
+      try {
+        existingPicks = await DLC_DB.loadAllPlayerPicks().then(all => all['Coin'] || {});
+      } catch (e) {
+        console.warn('Could not load Coin\'s existing picks, starting fresh:', e);
+      }
+
+      const coinPicks = { ...existingPicks };
+      const flipLog = [];
+
+      for (const game of chosen) {
+        const isHeads = Math.random() < 0.5; // heads = home, tails = away
+        const homeFavored = game.currentSpread <= 0;
+        const pickedHome = isHeads;
+        const pickedFavorite = pickedHome ? homeFavored : !homeFavored;
+        const spreadMag = Math.abs(game.currentSpread || 0);
+        const side = pickedFavorite ? 'favorite' : 'underdog';
+        const spread = pickedFavorite ? -spreadMag : spreadMag;
+        const team = pickedHome ? game.homeTeam : game.awayTeam;
+
+        coinPicks[game.id] = { team, spread, side, pickedAt: new Date().toISOString(), gameId: game.id };
+        flipLog.push({ game, isHeads, team });
+      }
+
+      try {
+        await DLC_DB.savePlayerPicks('Coin', coinPicks);
+      } catch (e) {
+        console.error('Failed to save Coin\'s picks:', e);
+        statusEl.textContent = '❌ Failed to save Coin\'s picks — try again.';
+        return;
+      }
+
+      statusEl.textContent = `✅ Coin's picks are set for ${chosen.length} game${chosen.length !== 1 ? 's' : ''}. Scores automatically like any other player once you enter final scores.`;
+
+      document.getElementById('coinFlipResult').innerHTML = `
+        <div style="max-height:280px;overflow-y:auto;border:1px solid #e0e0e0;border-radius:8px;">
+          <table style="width:100%;border-collapse:collapse;">
+            <thead><tr style="background:#fafafa;">
+              <th style="padding:8px 12px;text-align:left;font-size:12px;color:#666;">Matchup</th>
+              <th style="padding:8px 12px;text-align:left;font-size:12px;color:#666;">Flip</th>
+              <th style="padding:8px 12px;text-align:left;font-size:12px;color:#666;">Coin picks</th>
+            </tr></thead>
+            <tbody>
+              ${flipLog.map(({ game, isHeads, team }) => `
+                <tr>
+                  <td style="padding:8px 12px;font-size:13px;">${game.awayAbbr} @ ${game.homeAbbr}</td>
+                  <td style="padding:8px 12px;font-size:13px;">${isHeads ? '🪙 Heads (Home)' : '🪙 Tails (Away)'}</td>
+                  <td style="padding:8px 12px;font-size:13px;font-weight:600;">${team}</td>
+                </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>`;
+
+      renderSubmittedPicks();
+    }
+
+    async function renderSubmittedPicks() {
+      const container = document.getElementById('submittedPicksList');
+      container.innerHTML = '<p style="color:#999;">Loading...</p>';
+
+      let allPicks = {};
+      try {
+        allPicks = await DLC_DB.loadAllPlayerPicks();
+      } catch (e) {
+        console.error('Failed to load picks:', e);
+        container.innerHTML = '<p style="color:#c00;">Failed to load picks from Firebase.</p>';
+        return;
+      }
+
+      const roster = typeof PLAYER_EMAILS !== 'undefined' ? Object.keys(PLAYER_EMAILS) : Object.keys(allPicks);
+      const submitted = roster.filter(name => allPicks[name] && Object.keys(allPicks[name]).length > 0);
+      document.getElementById('submittedCount').textContent = submitted.length;
+      document.getElementById('rosterCount').textContent = roster.length;
+
+      container.innerHTML = roster.map(name => {
+        const playerPicks = allPicks[name] || {};
+        const pickIds = Object.keys(playerPicks)
+          .sort((a, b) => {
+            const ga = games.find(g => g.id === a), gb = games.find(g => g.id === b);
+            return (ga ? new Date(ga.gameTime) : 0) - (gb ? new Date(gb.gameTime) : 0);
+          });
+        const count = pickIds.length;
+
+        const rows = pickIds.map(gameId => {
+          const p = playerPicks[gameId];
+          const game = games.find(g => g.id === gameId);
+          const matchup = game ? `${game.awayAbbr} @ ${game.homeAbbr}` : gameId;
+          const spreadNum = Number(p.spread);
+          const spreadLabel = spreadNum > 0 ? `+${spreadNum}` : `${spreadNum}`;
+          return `<tr>
+            <td style="padding:6px 10px;font-size:13px;color:#666;">${matchup}</td>
+            <td style="padding:6px 10px;font-size:13px;font-weight:600;">${p.team}</td>
+            <td style="padding:6px 10px;font-size:13px;color:${p.side === 'favorite' ? '#e53e3e' : '#00c48c'};">${spreadLabel}</td>
+          </tr>`;
+        }).join('');
+
+        return `
+          <div style="border:1px solid #e0e0e0;border-radius:8px;margin-bottom:14px;overflow:hidden;">
+            <div style="padding:12px 16px;background:${count > 0 ? '#f0fdf9' : '#fafafa'};display:flex;justify-content:space-between;align-items:center;">
+              <strong>${name}</strong>
+              <span style="font-size:13px;color:${count >= 10 ? '#00c48c' : '#999'};font-weight:600;">${count} / 10 picks</span>
+            </div>
+            ${count > 0 ? `
+            <table style="width:100%;border-collapse:collapse;">
+              <tbody>${rows}</tbody>
+            </table>` : `<div style="padding:12px 16px;color:#999;font-size:13px;">No picks submitted yet</div>`}
+          </div>`;
+      }).join('');
+    }
+
     function renderScoresTab() {
       const locked = games.filter(g => g.finalSpread !== null);
       const scored = locked.filter(g => g.homeScore !== null);
       document.getElementById('finalCount').textContent = locked.length;
       document.getElementById('scoredCount').textContent = scored.length;
       renderScoreEntryTable();
-      renderPlayerResults();
+      renderPlayerResults(); // async; fills the table in once Firebase picks load
     }
 
     function renderScoreEntryTable() {
@@ -1661,7 +1917,7 @@ Cleveland Browns at Cincinnati Bengals (-7.5, 44.5)
       }
     }
 
-    function renderPlayerResults() {
+    async function renderPlayerResults() {
       const tbody = document.getElementById('playerResultsBody');
       const scoredGames = games.filter(g => g.homeScore !== null && g.finalSpread !== null);
 
@@ -1670,16 +1926,20 @@ Cleveland Browns at Cincinnati Bengals (-7.5, 44.5)
         return;
       }
 
-      // Get all player picks from localStorage
-      const playerData = {};
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key && key.startsWith('dlc_picks_')) {
-          const playerName = key.replace('dlc_picks_', '');
-          try {
-            const picks = JSON.parse(localStorage.getItem(key));
-            playerData[playerName] = picks;
-          } catch(e) {}
+      // Player picks live in Firebase (this used to read localStorage only,
+      // which is just whatever's in the commissioner's own browser - real
+      // picks made from players' own devices never showed up here).
+      let playerData = {};
+      try {
+        playerData = await DLC_DB.loadAllPlayerPicks();
+      } catch (e) {
+        console.warn('Firebase load failed for player results, trying localStorage:', e);
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && key.startsWith('dlc_picks_')) {
+            const playerName = key.replace('dlc_picks_', '');
+            try { playerData[playerName] = JSON.parse(localStorage.getItem(key)); } catch(e) {}
+          }
         }
       }
 
@@ -2248,61 +2508,6 @@ function copyPlainText() {
 }
 
 </script>
-
-
-<!-- Email Results Panel -->
-<div class="panel" id="panel-email">
-  <div class="panel-header">
-    <h2>📧 Email Week Results</h2>
-    <p>Generate and send weekly results to all players</p>
-  </div>
-  
-  <div class="section">
-    <div style="margin-bottom:20px;">
-      <label style="display:block; margin-bottom:8px; font-weight:600;">Email Recipients:</label>
-      <div style="display:flex; gap:10px; align-items:flex-start;">
-        <input type="text" id="emailRecipients" 
-               placeholder="player1@email.com, player2@email.com, ..." 
-               style="flex:1; padding:10px; border:1px solid #ddd; border-radius:6px; font-size:14px;">
-        <button onclick="fillAllEmails()" 
-                style="background:#667eea; color:white; border:none; padding:10px 20px; border-radius:6px; font-size:14px; font-weight:600; cursor:pointer; white-space:nowrap;">
-          📋 Fill All Players
-        </button>
-      </div>
-      <p style="font-size:12px; color:#666; margin-top:6px;">Click "Fill All Players" to auto-fill all email addresses</p>
-    </div>
-    
-    <div style="margin-bottom:20px;">
-      <label style="display:block; margin-bottom:8px; font-weight:600;">Week Number:</label>
-      <input type="number" id="emailWeek" value="8" min="1" max="18"
-             style="width:150px; padding:10px; border:1px solid #ddd; border-radius:6px; font-size:14px;">
-    </div>
-    
-    <button onclick="generateWeeklyEmail()" 
-            style="background:#667eea; color:white; border:none; padding:12px 24px; border-radius:8px; font-size:15px; font-weight:600; cursor:pointer;">
-      📧 Generate Email
-    </button>
-    
-    <div id="emailPreview" style="margin-top:30px; padding:20px; background:#f9f9f9; border-radius:8px; display:none;">
-      <h3 style="margin-bottom:15px;">Email Preview:</h3>
-      <div id="emailContent" style="background:white; padding:20px; border-radius:6px; font-family:Arial,sans-serif; line-height:1.6;">
-      </div>
-      <div style="margin-top:20px; display:flex; gap:12px;">
-        <button onclick="copyEmailHTML()" 
-                style="background:#00c48c; color:white; border:none; padding:12px 24px; border-radius:8px; font-size:15px; font-weight:600; cursor:pointer;">
-          📋 Copy HTML Email
-        </button>
-        <button onclick="copyPlainText()" 
-                style="background:#667eea; color:white; border:none; padding:12px 24px; border-radius:8px; font-size:15px; font-weight:600; cursor:pointer;">
-          📝 Copy Plain Text
-        </button>
-      </div>
-      <p style="font-size:13px; color:#666; margin-top:12px;">
-        Click "Copy HTML Email" then paste into Gmail/Outlook compose window for beautiful formatting
-      </p>
-    </div>
-  </div>
-</div>
 
 </body>
 </html>
