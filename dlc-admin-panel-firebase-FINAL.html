@@ -818,17 +818,18 @@
       <div style="background:#f0f4ff; border-left:4px solid #667eea; border-radius:8px; padding:20px; margin-bottom:28px;">
         <h3 style="margin-bottom:6px;">📋 Yahoo Sports (fallback)</h3>
         <p style="color:#444; font-size:14px; line-height:1.8; margin-bottom:14px;">
-          Yahoo has no public API like ESPN, so "Fetch from Yahoo" works by pulling the
-          betting page's text server-side and running it through the same parser as pasting
-          by hand — it's a shortcut for the copy step, not a real API, and is more likely to
-          need a manual paste if Yahoo changes their page. Always check the preview below
-          before importing either way.
+          Yahoo has no public API like ESPN, so "Fetch from Yahoo" works by pulling
+          <strong>sports.yahoo.com/nfl/schedule/</strong> (or <strong>college-football/schedule/</strong>
+          for FBS) server-side and running its text through the same parser as pasting by hand —
+          a shortcut for the copy step, not a real API. That schedule page always shows the
+          current week with no URL to update, unlike the old article-based pages this used to
+          point at. Always check the preview below before importing either way.
         </p>
         <div style="margin-bottom:14px;">
           <label style="display:block; font-weight:500; font-size:13px; margin-bottom:6px;">
-            Yahoo page to fetch (edit this if it 404s — Yahoo restructures their site sometimes):
+            Yahoo page to fetch (edit this if it 404s, or if the schedule page ever stops carrying spreads):
           </label>
-          <input type="text" id="yahooSourceUrl" placeholder="Leave blank to use the default for the selected league below"
+          <input type="text" id="yahooSourceUrl" placeholder="Leave blank to use the schedule page for the selected league below"
                  style="width:100%; padding:8px 12px; border:1px solid #ccc; border-radius:6px; font-size:13px; font-family:monospace;">
         </div>
         <div style="display:flex; gap:12px; align-items:center; margin-bottom:14px;">
@@ -836,8 +837,7 @@
           <span id="yahooFetchStatus" style="font-size:13px; color:#666;"></span>
         </div>
         <ol style="color:#444; font-size:14px; line-height:2; margin-left:18px;">
-          <li>Or go to Yahoo Sports yourself and find the current spreads page (their URLs move — try
-              <strong>sports.yahoo.com/nfl/odds</strong> or search "yahoo sports nfl odds")</li>
+          <li>Or paste a different Yahoo page above if the schedule page ever stops working</li>
           <li>Find the weekly spreads article (e.g. "Full list of Week 8 spreads")</li>
           <li>Select all the game lines and copy them</li>
           <li>Paste below — the parser does the rest</li>

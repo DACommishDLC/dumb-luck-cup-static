@@ -116,14 +116,27 @@ tell apart the two ways this can go wrong:
 `api/yahoo-scoreboard.js` + the "🔄 Fetch from Yahoo" button (Load New Week
 tab) do the same job for the Yahoo fallback that ESPN's auto-load does for
 the primary path — but Yahoo has no public API, so this works completely
-differently under the hood: the serverless function fetches the Yahoo
-betting page's raw HTML, strips it down to plain text, and feeds that
-through the *same* `parseYahooSpreads()` parser the manual paste box always
-used. It's automating the copy step, not adding a real integration.
+differently under the hood: the serverless function fetches a Yahoo page's
+raw HTML, strips it down to plain text, and feeds that through the *same*
+`parseYahooSpreads()` parser the manual paste box always used. It's
+automating the copy step, not adding a real integration.
+
+Source URL: `sports.yahoo.com/nfl/schedule/` (and the
+`college-football/schedule/` equivalent for FBS). This replaced an initial
+guess at a `/betting/` path that 404d in production. The commissioner
+confirmed the NFL schedule URL is stable and always shows the current
+week — no per-week URL to maintain, unlike the old article-based pages
+this originally pointed at. The FBS URL follows the same pattern but
+wasn't separately confirmed. If either starts 404ing or coming back with
+0 parsed games, the admin panel's Yahoo card has a URL field to override
+it live without a code change — check that first.
 
 This makes it meaningfully more fragile than the ESPN path:
 - No JSON contract — any redesign of Yahoo's page markup can silently
   break the text extraction or feed the parser garbage.
+- A schedule page may not carry spread numbers the same way a betting/odds
+  page would — if fetches keep returning 0 games even though the page
+  loads fine, that's the first thing to check, not just a markup change.
 - Not verified against Yahoo's live page (same "no network access to test
   from this environment" caveat as the original ESPN work, but with a much
   flimsier fallback if it's wrong — HTML scraping has no schema to fail

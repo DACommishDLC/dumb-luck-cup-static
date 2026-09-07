@@ -7,13 +7,20 @@
 //
 // Unlike ESPN, Yahoo has no public API - this scrapes rendered HTML,
 // which is inherently more fragile than the ESPN JSON integration and
-// WILL break if Yahoo changes their page markup. It was also not
-// verified against Yahoo's live page (no network access to
-// sports.yahoo.com from the environment this was built in). The
-// parser's own line-filtering (it only keeps lines matching a
-// "Team at Team (-N, N)" pattern) does a lot of the work of ignoring
-// nav/footer/ad noise from the full page text, but always check the
-// preview table before importing - same as manual paste.
+// WILL break if Yahoo changes their page markup. The nfl/schedule/ URL
+// was confirmed by the commissioner to be a stable, always-current page
+// (unlike the article-based pages this originally pointed at, which get
+// a new URL every week); the college-football/schedule/ counterpart
+// follows the same URL pattern but wasn't separately confirmed. Neither
+// was verified against Yahoo's live page from the environment this was
+// built in (no network access to sports.yahoo.com from here), and a
+// schedule page may or may not carry spread numbers the same way a
+// betting/odds page would - if fetches keep coming back with 0 games,
+// that's the first thing to check. The parser's own line-filtering (it
+// only keeps lines matching a "Team at Team (-N, N)" pattern) does a
+// lot of the work of ignoring nav/footer/ad noise from the full page
+// text either way, but always check the preview table before
+// importing - same as manual paste.
 //
 // GET /api/yahoo-scoreboard?league=nfl|fbs
 // GET /api/yahoo-scoreboard?url=https://sports.yahoo.com/...  (overrides league default)
@@ -26,9 +33,13 @@
 // here. Restricted to yahoo.com hosts so this can't be turned into an
 // open proxy for arbitrary URLs.
 
+// The schedule page (not a betting/odds subpage) - confirmed by the
+// commissioner to be a stable URL that always shows the current week
+// and doesn't change week to week, unlike the old article-based pages
+// this was originally pointed at.
 const SOURCE_URLS = {
-  nfl: 'https://sports.yahoo.com/nfl/betting/',
-  fbs: 'https://sports.yahoo.com/college-football/betting/'
+  nfl: 'https://sports.yahoo.com/nfl/schedule/',
+  fbs: 'https://sports.yahoo.com/college-football/schedule/'
 };
 
 module.exports = async (req, res) => {
