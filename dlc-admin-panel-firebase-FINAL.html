@@ -2385,6 +2385,83 @@ Cleveland Browns at Cincinnati Bengals (-7.5, 44.5)
       }
     }
 
+    // Full names for the schedule page's abbreviations - Yahoo's schedule
+    // page only shows short city names ("LA Rams", "NY Jets"), not full
+    // "City Mascot" names like the rest of this app uses elsewhere.
+    const NFL_TEAM_NAMES = {
+      ARI: 'Arizona Cardinals', ATL: 'Atlanta Falcons', BAL: 'Baltimore Ravens',
+      BUF: 'Buffalo Bills', CAR: 'Carolina Panthers', CHI: 'Chicago Bears',
+      CIN: 'Cincinnati Bengals', CLE: 'Cleveland Browns', DAL: 'Dallas Cowboys',
+      DEN: 'Denver Broncos', DET: 'Detroit Lions', GB: 'Green Bay Packers',
+      HOU: 'Houston Texans', IND: 'Indianapolis Colts', JAX: 'Jacksonville Jaguars',
+      KC: 'Kansas City Chiefs', LV: 'Las Vegas Raiders', LAC: 'Los Angeles Chargers',
+      LAR: 'Los Angeles Rams', MIA: 'Miami Dolphins', MIN: 'Minnesota Vikings',
+      NE: 'New England Patriots', NO: 'New Orleans Saints', NYG: 'New York Giants',
+      NYJ: 'New York Jets', PHI: 'Philadelphia Eagles', PIT: 'Pittsburgh Steelers',
+      SF: 'San Francisco 49ers', SEA: 'Seattle Seahawks', TB: 'Tampa Bay Buccaneers',
+      TEN: 'Tennessee Titans', WAS: 'Washington Commanders'
+    };
+
+    // Yahoo's schedule page (sports.yahoo.com/{nfl|college-football}/schedule/)
+    // lists each game as three lines once stripped to plain text:
+    //   Away Team ABBR
+    //   Home Team ABBR
+    //   Network Tickets from $N [FAVORITE_ABBR -SPREAD O/U TOTAL]
+    // The odds portion is only present once a line's been posted - games
+    // without one just end after the ticket price, which is handled as
+    // "no spread yet" (currentSpread: null) rather than a parse failure.
+    // Confirmed against a real fetch of the NFL page; the FBS schedule page
+    // wasn't separately checked but is assumed to share the same template.
+    function parseYahooSchedule(text) {
+      const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+      const teamLine = /^(.+?)\s+([A-Z]{2,4})$/;
+      const oddsTail = /([A-Z]{2,4})\s+(-?\d+(?:\.\d+)?)\s+O\/U\s+(\d+(?:\.\d+)?)\s*$/;
+
+      const games = [];
+      let i = 0;
+      while (i < lines.length) {
+        if (/^Away\s+Home\s+Time\s+Network\s+Tickets\s+Odds$/i.test(lines[i])) {
+          i++;
+          continue;
+        }
+
+        const awayMatch = lines[i] && lines[i].match(teamLine);
+        const homeMatch = lines[i + 1] && lines[i + 1].match(teamLine);
+        const detailsLine = lines[i + 2];
+
+        if (awayMatch && homeMatch && detailsLine !== undefined) {
+          const awayAbbr = awayMatch[2];
+          const homeAbbr = homeMatch[2];
+          const awayTeam = NFL_TEAM_NAMES[awayAbbr] || awayMatch[1].trim();
+          const homeTeam = NFL_TEAM_NAMES[homeAbbr] || homeMatch[1].trim();
+
+          const oddsMatch = detailsLine.match(oddsTail);
+          let spread = null, rawSpread = null;
+          if (oddsMatch) {
+            const favoriteAbbr = oddsMatch[1];
+            rawSpread = parseFloat(oddsMatch[2]);
+            spread = (favoriteAbbr === homeAbbr) ? rawSpread : Math.abs(rawSpread);
+          }
+
+          games.push({ awayTeam, awayAbbr, homeTeam, homeAbbr, spread, rawSpread, day: null, time: null });
+          i += 3;
+        } else {
+          i += 1;
+        }
+      }
+
+      return games;
+    }
+
+    // Tries the schedule-page format (the current source) first, falls
+    // back to the older inline "(-3, 43.5)" article format in case someone
+    // pastes from a different kind of Yahoo page by hand.
+    function parseYahooAny(text) {
+      const schedule = parseYahooSchedule(text);
+      if (schedule.length > 0) return schedule;
+      return parseYahooSpreads(text);
+    }
+
     function parseYahooSpreads(text) {
       const games = [];
       const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
@@ -2447,7 +2524,7 @@ Cleveland Browns at Cincinnati Bengals (-7.5, 44.5)
 
     function previewParsedGames() {
       const text = document.getElementById('yahoopasteArea').value;
-      const parsed = parseYahooSpreads(text);
+      const parsed = parseYahooAny(text);
       const countEl = document.getElementById('parseCount');
       const preview = document.getElementById('parsedPreview');
 
@@ -2457,12 +2534,13 @@ Cleveland Browns at Cincinnati Bengals (-7.5, 44.5)
         return;
       }
 
-      countEl.textContent = `✅ ${parsed.length} game${parsed.length !== 1 ? 's' : ''} found`;
+      const withSpread = parsed.filter(g => g.spread !== null && g.spread !== undefined).length;
+      countEl.textContent = `✅ ${parsed.length} game${parsed.length !== 1 ? 's' : ''} found (${withSpread} with a line posted)`;
 
       const rows = parsed.map((g, i) => {
-        const favLabel = g.spread <= 0
-          ? `${g.homeTeam} (${g.spread})`
-          : `${g.awayTeam} (${g.rawSpread})`;
+        const favLabel = (g.spread === null || g.spread === undefined)
+          ? 'No line yet'
+          : (g.spread <= 0 ? `${g.homeTeam} (${g.spread})` : `${g.awayTeam} (${g.rawSpread})`);
         return `<tr>
           <td style="padding:8px 12px;font-size:13px;">${i + 1}</td>
           <td style="padding:8px 12px;font-size:13px;font-weight:500;">${g.awayTeam} @ ${g.homeTeam}</td>
@@ -2539,7 +2617,7 @@ Cleveland Browns at Cincinnati Bengals (-7.5, 44.5)
       const text   = document.getElementById('yahoopasteArea').value;
       const league = document.getElementById('pasteLeague').value;
       const week   = parseInt(document.getElementById('pasteWeek').value) || 8;
-      const parsed = parseYahooSpreads(text);
+      const parsed = parseYahooAny(text);
 
       if (parsed.length === 0) {
         showAlert('No games found. Paste the Yahoo Sports spreads text first.', 'error');
@@ -2552,11 +2630,11 @@ Cleveland Browns at Cincinnati Bengals (-7.5, 44.5)
         season: new Date().getFullYear(),
         league,
         homeTeam:          g.homeTeam,
-        homeAbbr:          g.homeTeam.split(' ').slice(-1)[0].substring(0, 3).toUpperCase(),
+        homeAbbr:          g.homeAbbr || g.homeTeam.split(' ').slice(-1)[0].substring(0, 3).toUpperCase(),
         awayTeam:          g.awayTeam,
-        awayAbbr:          g.awayTeam.split(' ').slice(-1)[0].substring(0, 3).toUpperCase(),
+        awayAbbr:          g.awayAbbr || g.awayTeam.split(' ').slice(-1)[0].substring(0, 3).toUpperCase(),
         gameTime:          parseYahooGameTime(g.day, g.time),
-        currentSpread:     g.spread,
+        currentSpread:     (g.spread === undefined ? null : g.spread),
         spreadLastUpdated: new Date().toISOString(),
         finalSpread:       null,
         status:            'scheduled',
