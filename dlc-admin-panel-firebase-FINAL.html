@@ -1503,7 +1503,9 @@ Cleveland Browns at Cincinnati Bengals (-7.5, 44.5)
     function updateGameSpread(gameId, newSpread) {
       const game = games.find(g => g.id === gameId);
       if (game) {
-        game.currentSpread = parseFloat(newSpread);
+        // Same "blank means no line yet, not NaN" handling as saveGame().
+        const parsed = parseFloat(newSpread);
+        game.currentSpread = Number.isNaN(parsed) ? null : parsed;
         game.spreadLastUpdated = new Date().toISOString();
         saveGames();
       }
@@ -1514,6 +1516,10 @@ Cleveland Browns at Cincinnati Bengals (-7.5, 44.5)
       if (game) {
         if (game.finalSpread === null) {
           // Lock it
+          if (game.currentSpread === null || Number.isNaN(game.currentSpread)) {
+            showAlert(`Can't lock ${game.homeTeam} vs ${game.awayTeam} — no spread set yet.`, 'error');
+            return;
+          }
           game.finalSpread = game.currentSpread;
           game.status = 'live';
           showAlert(`Locked ${game.homeTeam} vs ${game.awayTeam} at ${formatSpread(game.finalSpread)}`, 'success');
@@ -1554,7 +1560,11 @@ Cleveland Browns at Cincinnati Bengals (-7.5, 44.5)
       
       games.forEach(game => {
         const gameTime = new Date(game.gameTime);
-        if (game.status === 'scheduled' && gameTime <= now) {
+        // Skip games that kicked off with a NaN spread (old bad data) -
+        // locking those in would let a NaN finalSpread reach scoring later.
+        // A genuinely missing (null) spread is fine to lock as null; it's
+        // just excluded from scoring the same way it already is elsewhere.
+        if (game.status === 'scheduled' && gameTime <= now && !Number.isNaN(game.currentSpread)) {
           game.finalSpread = game.currentSpread;
           game.status = 'live';
           locked++;
@@ -1600,13 +1610,17 @@ Cleveland Browns at Cincinnati Bengals (-7.5, 44.5)
     
     function saveGame(event) {
       event.preventDefault();
-      
+
+      // A blank spread field means "no line posted yet", not zero -
+      // parseFloat('') is NaN, and storing that literally shows as
+      // "+NaN"/"-NaN" on the picks page instead of "no line yet".
+      const spreadInput = parseFloat(document.getElementById('gameSpread').value);
       const gameData = {
         league: document.getElementById('gameLeague').value,
         awayTeam: document.getElementById('awayTeam').value,
         homeTeam: document.getElementById('homeTeam').value,
         gameTime: new Date(document.getElementById('gameTime').value).toISOString(),
-        currentSpread: parseFloat(document.getElementById('gameSpread').value)
+        currentSpread: Number.isNaN(spreadInput) ? null : spreadInput
       };
       
       if (currentEditingGame) {

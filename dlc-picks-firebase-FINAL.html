@@ -1144,10 +1144,15 @@
     const myPick = picks[game.id];
     const isPicked = !!myPick;
 
+    // A game with no line posted yet (currentSpread is null, or NaN from a
+    // blank admin entry) can't be picked against - render it without pick
+    // buttons instead of computing "+NaN"/"-NaN".
+    const hasSpread = typeof game.currentSpread === 'number' && !Number.isNaN(game.currentSpread);
+
     // Determine favorite and underdog
     // currentSpread is relative to HOME team (negative = home favored)
-    const homeFavored = game.currentSpread <= 0;
-    const spreadValue = Math.abs(game.currentSpread);
+    const homeFavored = hasSpread ? game.currentSpread <= 0 : true;
+    const spreadValue = hasSpread ? Math.abs(game.currentSpread) : 0;
 
     const pickedFav = myPick && myPick.side === 'favorite';
     const pickedDog = myPick && myPick.side === 'underdog';
@@ -1200,7 +1205,7 @@
             </div>
           </div>
 
-          ${!isLocked ? `
+          ${!isLocked && hasSpread ? `
           <div class="pick-row">
             <button
               class="pick-btn ${awaySide.picked ? awaySide.selectedClass : ''}"
@@ -1218,6 +1223,11 @@
             </button>
           </div>
           <div class="spread-updated">Spread updated ${updatedAgo}</div>
+          ` : !isLocked ? `
+          <div style="margin-top:10px; padding:8px 12px; background:var(--border);
+               border-radius:8px; font-size:12px; color:var(--muted); text-align:center;">
+            Line not posted yet — check back soon
+          </div>
           ` : `
           <div style="margin-top:10px; padding:8px 12px; background:var(--border);
                border-radius:8px; font-size:12px; color:var(--muted); text-align:center;">
