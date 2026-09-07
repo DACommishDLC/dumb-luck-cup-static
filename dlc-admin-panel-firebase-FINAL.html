@@ -1685,6 +1685,24 @@ Cleveland Browns at Cincinnati Bengals (-7.5, 44.5)
       void icon.offsetWidth; // restart the animation if clicked again
       icon.classList.add('coin-flipping');
 
+      // Re-fetch rather than trusting the in-memory `games` - this page
+      // only loads games once at page-open with no live sync, so if games
+      // were imported/cleared in another tab (or a while ago in this one)
+      // this could otherwise be working off a stale copy.
+      statusEl.textContent = '⏳ Loading current games...';
+      try {
+        const freshGames = await DLC_DB.loadGames();
+        if (freshGames && freshGames.length > 0) {
+          games = freshGames;
+          updateStats();
+          renderGamesTable();
+          renderSpreadsTable();
+          renderUpcomingGames();
+        }
+      } catch (e) {
+        console.warn('Could not refresh games before flipping Coin, using in-memory copy:', e);
+      }
+
       const now = new Date();
       const nflGames = games.filter(g => g.league === 'NFL');
       const eligible = nflGames.filter(g =>
