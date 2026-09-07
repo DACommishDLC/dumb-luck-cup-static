@@ -1906,9 +1906,12 @@ Cleveland Browns at Cincinnati Bengals (-7.5, 44.5)
 
         return `
           <div style="border:1px solid #e0e0e0;border-radius:8px;margin-bottom:14px;overflow:hidden;">
-            <div style="padding:12px 16px;background:${count > 0 ? '#f0fdf9' : '#fafafa'};display:flex;justify-content:space-between;align-items:center;">
+            <div style="padding:12px 16px;background:${count > 0 ? '#f0fdf9' : '#fafafa'};display:flex;justify-content:space-between;align-items:center;gap:12px;">
               <strong>${name}</strong>
-              <span style="font-size:13px;color:${count >= 10 ? '#00c48c' : '#999'};font-weight:600;">${count} / 10 picks</span>
+              <div style="display:flex;align-items:center;gap:12px;">
+                <span style="font-size:13px;color:${count >= 10 ? '#00c48c' : '#999'};font-weight:600;">${count} / 10 picks</span>
+                ${count > 0 ? `<button onclick="clearPlayerPicks('${name}')" style="background:none;border:1px solid #c0392b;color:#c0392b;border-radius:6px;padding:4px 10px;font-size:12px;font-weight:600;cursor:pointer;">🗑️ Clear</button>` : ''}
+              </div>
             </div>
             ${count > 0 ? `
             <table style="width:100%;border-collapse:collapse;">
@@ -1916,6 +1919,18 @@ Cleveland Browns at Cincinnati Bengals (-7.5, 44.5)
             </table>` : `<div style="padding:12px 16px;color:#999;font-size:13px;">No picks submitted yet</div>`}
           </div>`;
       }).join('');
+    }
+
+    async function clearPlayerPicks(player) {
+      if (!confirm(`Clear all of ${player}'s current picks? This cannot be undone.`)) return;
+      try {
+        await DLC_DB.savePlayerPicks(player, {});
+        showAlert(`✅ Cleared ${player}'s picks.`, 'success');
+        renderSubmittedPicks();
+      } catch (e) {
+        console.error(`Failed to clear ${player}'s picks:`, e);
+        showAlert(`Failed to clear ${player}'s picks.`, 'error');
+      }
     }
 
     function renderScoresTab() {
