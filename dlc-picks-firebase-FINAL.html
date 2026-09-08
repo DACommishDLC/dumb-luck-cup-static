@@ -1145,14 +1145,16 @@
     const isPicked = !!myPick;
 
     // A game with no line posted yet (currentSpread is null, or NaN from a
-    // blank admin entry) can't be picked against - render it without pick
-    // buttons instead of computing "+NaN"/"-NaN".
+    // blank admin entry) is still pickable - straight up, as a "PK" (pick
+    // 'em) game, same convention Coin's auto-picker already uses - it just
+    // can't show a real favorite/underdog split until a line is posted.
     const hasSpread = typeof game.currentSpread === 'number' && !Number.isNaN(game.currentSpread);
 
     // Determine favorite and underdog
     // currentSpread is relative to HOME team (negative = home favored)
     const homeFavored = hasSpread ? game.currentSpread <= 0 : true;
     const spreadValue = hasSpread ? Math.abs(game.currentSpread) : 0;
+    const spreadText = hasSpread ? spreadValue : 'PK';
 
     const pickedFav = myPick && myPick.side === 'favorite';
     const pickedDog = myPick && myPick.side === 'underdog';
@@ -1161,16 +1163,18 @@
     // left, home on the right) rather than always favorite-left/dog-right —
     // otherwise the FAVORITE button can end up under the wrong team.
     const awaySide = {
-      team: game.awayTeam, label: homeFavored ? 'UNDERDOG' : 'FAVORITE',
+      team: game.awayTeam, label: !hasSpread ? 'PICK' : (homeFavored ? 'UNDERDOG' : 'FAVORITE'),
       spread: homeFavored ? `+${spreadValue}` : `-${spreadValue}`,
+      spreadLabel: hasSpread ? (homeFavored ? `+${spreadText}` : `-${spreadText}`) : spreadText,
       side: homeFavored ? 'underdog' : 'favorite',
       picked: homeFavored ? pickedDog : pickedFav,
       spreadClass: homeFavored ? 'dog-spread' : 'fav-spread',
       selectedClass: homeFavored ? 'selected-dog' : 'selected-fav'
     };
     const homeSide = {
-      team: game.homeTeam, label: homeFavored ? 'FAVORITE' : 'UNDERDOG',
+      team: game.homeTeam, label: !hasSpread ? 'PICK' : (homeFavored ? 'FAVORITE' : 'UNDERDOG'),
       spread: homeFavored ? `-${spreadValue}` : `+${spreadValue}`,
+      spreadLabel: hasSpread ? (homeFavored ? `-${spreadText}` : `+${spreadText}`) : spreadText,
       side: homeFavored ? 'favorite' : 'underdog',
       picked: homeFavored ? pickedFav : pickedDog,
       spreadClass: homeFavored ? 'fav-spread' : 'dog-spread',
@@ -1205,29 +1209,24 @@
             </div>
           </div>
 
-          ${!isLocked && hasSpread ? `
+          ${!isLocked ? `
           <div class="pick-row">
             <button
               class="pick-btn ${awaySide.picked ? awaySide.selectedClass : ''}"
               onclick="makePick('${game.id}', '${awaySide.team}', ${awaySide.spread}, '${awaySide.side}')"
             >
-              <div class="pick-btn-spread ${awaySide.spreadClass}">${awaySide.spread}</div>
+              <div class="pick-btn-spread ${awaySide.spreadClass}">${awaySide.spreadLabel}</div>
               <div class="pick-btn-label">${awaySide.label}</div>
             </button>
             <button
               class="pick-btn ${homeSide.picked ? homeSide.selectedClass : ''}"
               onclick="makePick('${game.id}', '${homeSide.team}', ${homeSide.spread}, '${homeSide.side}')"
             >
-              <div class="pick-btn-spread ${homeSide.spreadClass}">${homeSide.spread}</div>
+              <div class="pick-btn-spread ${homeSide.spreadClass}">${homeSide.spreadLabel}</div>
               <div class="pick-btn-label">${homeSide.label}</div>
             </button>
           </div>
-          <div class="spread-updated">Spread updated ${updatedAgo}</div>
-          ` : !isLocked ? `
-          <div style="margin-top:10px; padding:8px 12px; background:var(--border);
-               border-radius:8px; font-size:12px; color:var(--muted); text-align:center;">
-            No spread yet
-          </div>
+          <div class="spread-updated">${hasSpread ? `Spread updated ${updatedAgo}` : 'No spread posted yet — picking straight up (PK)'}</div>
           ` : `
           <div style="margin-top:10px; padding:8px 12px; background:var(--border);
                border-radius:8px; font-size:12px; color:var(--muted); text-align:center;">
