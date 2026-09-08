@@ -238,6 +238,25 @@
       margin: 2px 4px;
     }
 
+    /* On phone, the filter bar packs ~6 main filters plus every FBS
+       conference chip (Big Ten, SEC, etc.) into one row - as a single
+       horizontally-scrolling strip that's fine on desktop, "My Picks" and
+       "Unpicked" end up scrolled off past ten-plus conference chips, and
+       it reads as a cramped, cut-off mess on a narrow screen. Wrapping
+       onto as many rows as needed keeps every filter visible at a glance
+       instead of hidden behind a scroll; the vertical dividers only made
+       sense inline in one row, so they're dropped once it wraps.
+       Desktop (600px+) keeps the original single-row scroller untouched. */
+    @media (max-width: 599px) {
+      .filter-bar {
+        flex-wrap: wrap;
+        overflow-x: visible;
+        padding: 10px 16px;
+      }
+
+      .filter-divider { display: none; }
+    }
+
     /* ── Search ──────────────────────────────────── */
     .search-wrap {
       padding: 12px 20px;
